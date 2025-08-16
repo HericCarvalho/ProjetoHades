@@ -1,137 +1,196 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 public class MovimentaçãoPlayer : MonoBehaviour
 {
-    [Header("Configuração de Movimento")]
-    [SerializeField] private float velocidade;              // Velocidade normal do jogador
-    [SerializeField] private float velocidadeAgachado;      // Velocidade quando está agachado
-    [SerializeField] private float VelocidadeCorrendo;      // Velocidade ao correr
-    [SerializeField] private float velocidadeCansado;       // Velocidade reduzida quando cansado
-    [SerializeField] private float PuloForça;               // Força aplicada ao pular
-    [SerializeField] private float MouseSensibilidade;      // Sensibilidade do mouse para rotação
+    [Header("Movimento")]
+    [SerializeField] private float velocidade;                      // Velocidade normal
+    [SerializeField] private float velocidadeAgachado;              // Velocidade ao agachar
+    [SerializeField] private float VelocidadeCorrendo;              // Velocidade ao correr
+    [SerializeField] private float velocidadeCansado;               // Velocidade reduzida por cansaço
+    [SerializeField] private float PuloForca;                       // Força do pulo
+    [SerializeField] private float MouseSensibilidade;              // Sensibilidade do mouse
 
     [Header("Câmera")]
-    [SerializeField] private Transform cameraReferencia;    // Transform da câmera
-    [SerializeField] private float AlturaEmPé;              // Altura normal da câmera
-    [SerializeField] private float AlturaAgachado;          // Altura quando agachado
-    [SerializeField] private float VelocidadeTransição;     // Velocidade da interpolação da altura da câmera
+    [SerializeField] private Transform cameraReferencia;            // Referência da câmera
+    [SerializeField] private float AlturaEmPé;                      // Altura normal
+    [SerializeField] private float AlturaAgachado;                  // Altura agachado
+    [SerializeField] private float VelocidadeTransição;             // Velocidade da transição da altura
 
     [Header("Stamina")]
-    [SerializeField] public float MaxEstamina;              // Quantidade máxima de estamina
-    [SerializeField] private float RegeneraçãoEstamina;     // Velocidade de recuperação por segundo
-    [SerializeField] private float EstaminaGasta;           // Velocidade de gasto por segundo ao correr
+    [SerializeField] public float MaxEstamina;                      // Stamina máxima
+    [SerializeField] private float RegeneracaoEstamina;             // Quanto a stamina recupera por segundo
+    [SerializeField] private float EstaminaGasta;                   // Quanto a stamina consome ao correr
 
-    private float EstaminaAtual;                            // Estamina atual
-    private bool podeCorrer = true;                         // Bool para permitir corrida
+    [Header("Interação")]
+    [SerializeField] private float alcanceInteracao = 2f;           // Distância máxima para interagir
+    [SerializeField] private KeyCode teclaInteragir = KeyCode.E;    // Tecla para interação
+    
 
-    private float RotaçãoVertical;                          // Controle da rotação vertical da câmera
-    private Rigidbody RB;                                   // Rigidbody para movimento físico
-    private bool isGrounded = true;                         // Verifica se jogador está no chão
-    private bool isCrouching = false;                       // Estado agachado
-    private bool isCansado = false;                         // Estado cansado (estamina zerada)
+    // Estados internos
+    private float EstaminaAtual;
+    private bool podeCorrer = true;
+    private bool isCrouching = false;
+    private bool isCansado = false;
 
-    void Start()
+    private float RotacaoVertical;
+    private Rigidbody RB;
+    private bool isGrounded = true;
+
+    private void Start()
     {
-        RB = GetComponent<Rigidbody>();                     // Obtém o Rigidbody
-        Cursor.lockState = CursorLockMode.Locked;           // Trava o cursor no centro da tela
-        EstaminaAtual = MaxEstamina;                        // Inicializa com estamina cheia
+        RB = GetComponent<Rigidbody>();
+        Cursor.lockState = CursorLockMode.Locked;   // Trava cursor na tela
+        EstaminaAtual = MaxEstamina;               // Começa com stamina cheia
     }
 
-    void Update()
+    private void Update()
     {
-        // ===== Rotação do jogador com o mouse =====
+        RotacaoMouse();       // Rotaciona o jogador e a câmera
+        PuloAgachar();        // Controla pulo e agachar
+        SistemaStamina();     // Atualiza a stamina e estado cansado
+        AlturaCamera();       // Ajusta altura da câmera suavemente
+        DetectarInteracao();  // Detecta se o jogador quer interagir
+    }
+
+    #region Movimento e câmera
+    private void RotacaoMouse()
+    {
         float mouseX = Input.GetAxis("Mouse X") * MouseSensibilidade;
-        transform.Rotate(Vector3.up * mouseX);              // Rotação horizontal do corpo
+        transform.Rotate(Vector3.up * mouseX);
 
         float mouseY = Input.GetAxis("Mouse Y") * MouseSensibilidade;
-        RotaçãoVertical -= mouseY;                          // Rotação vertical da câmera
-        RotaçãoVertical = Mathf.Clamp(RotaçãoVertical, -80f, 80f);      // Limita para não virar de cabeça para baixo
-        cameraReferencia.localRotation = Quaternion.Euler(RotaçãoVertical, 0f, 0f);
+        RotacaoVertical -= mouseY;
+        RotacaoVertical = Mathf.Clamp(RotacaoVertical, -80f, 80f);
+        cameraReferencia.localRotation = Quaternion.Euler(RotacaoVertical, 0f, 0f);
+    }
 
-        // ===== Pulo =====
+    private void PuloAgachar()
+    {
+        // Pulo
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
-            RB.AddForce(Vector3.up * PuloForça, ForceMode.Impulse);     // Aplica força de pulo
-            isGrounded = false;                                         // Jogador agora está no ar
+            RB.AddForce(Vector3.up * PuloForca, ForceMode.Impulse);
+            isGrounded = false;
         }
 
-        // ===== Agachar (toggle com Ctrl) =====
+        // Toggle agachar
         if (Input.GetKeyDown(KeyCode.LeftControl))
-            isCrouching = !isCrouching;                                 // Alterna estado agachado
+            isCrouching = !isCrouching;
+    }
 
-        // ===== Sistema de Estamina e Estado Cansado =====
+    private void AlturaCamera()
+    {
+        float targetHeight = isCrouching ? AlturaAgachado : AlturaEmPé;
+        Vector3 cameraPos = cameraReferencia.localPosition;
+        cameraPos.y = Mathf.Lerp(cameraPos.y, targetHeight, Time.deltaTime * VelocidadeTransição);
+        cameraReferencia.localPosition = cameraPos;
+    }
+    #endregion
+
+    #region Stamina e estados
+    private void SistemaStamina()
+    {
         bool tentandoCorrer = Input.GetKey(KeyCode.LeftShift) && !isCrouching && !isCansado;
 
         if (tentandoCorrer)
         {
-            EstaminaAtual -= EstaminaGasta * Time.deltaTime;            // Reduz estamina enquanto corre
+            EstaminaAtual -= EstaminaGasta * Time.deltaTime;
 
+            // Se acabar a stamina, jogador fica cansado
             if (EstaminaAtual <= 0f)
             {
-                EstaminaAtual = 0f;                                     // Garante que não fique negativa
-                isCansado = true;                                       // Jogador entra no estado cansado
-                podeCorrer = false;                                     // Não pode mais correr
+                EstaminaAtual = 0f;
+                isCansado = true;
+                podeCorrer = false;
             }
         }
         else
         {
-            EstaminaAtual += RegeneraçãoEstamina * Time.deltaTime;      // Recupera estamina
+            EstaminaAtual += RegeneracaoEstamina * Time.deltaTime;
+
+            // Se recuperar totalmente, volta ao normal
             if (EstaminaAtual >= MaxEstamina)
             {
-                EstaminaAtual = MaxEstamina;                            // Garante limite máximo
-                isCansado = false;                                      // Sai do estado cansado
-                podeCorrer = true;                                      // Pode correr novamente
+                EstaminaAtual = MaxEstamina;
+                isCansado = false;
+                podeCorrer = true;
             }
         }
-
-        // ===== Altura da câmera (suavização) =====
-        float targetHeight = isCrouching ? AlturaAgachado : AlturaEmPé;
-        Vector3 cameraPos = cameraReferencia.localPosition;
-        cameraPos.y = Mathf.Lerp(cameraPos.y, targetHeight, Time.deltaTime * VelocidadeTransição); // Interpola suavemente
-        cameraReferencia.localPosition = cameraPos;
     }
+    #endregion
 
-    void FixedUpdate()
+    #region Movimento físico
+    private void FixedUpdate()
     {
-        float x = Input.GetAxis("Horizontal"); // Movimento lateral
-        float z = Input.GetAxis("Vertical");   // Movimento frontal
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
 
-        // ===== Determina velocidade atual do jogador =====
+        // Determina velocidade atual
         float currentSpeed;
 
         if (isCrouching)
-            currentSpeed = velocidadeAgachado;                          // Velocidade reduzida agachado
+            currentSpeed = velocidadeAgachado;
         else if (Input.GetKey(KeyCode.LeftShift) && !isCansado && EstaminaAtual > 0)
-            currentSpeed = VelocidadeCorrendo;                          // Velocidade aumentada correndo
-        else if (isCansado)                                             
-            currentSpeed = velocidadeCansado;                           // Velocidade reduzida quando cansado
-        else                                                            
-            currentSpeed = velocidade;                                  // Velocidade normal
-                                                                        
-        Vector3 move = transform.right * x + transform.forward * z;     // Calcula vetor de movimento
-        RB.MovePosition(RB.position + move * currentSpeed * Time.fixedDeltaTime);   // Aplica movimento
+            currentSpeed = VelocidadeCorrendo;
+        else if (isCansado)
+            currentSpeed = velocidadeCansado;
+        else
+            currentSpeed = velocidade;
+
+        Vector3 move = transform.right * x + transform.forward * z;
+        RB.MovePosition(RB.position + move * currentSpeed * Time.fixedDeltaTime);
     }
 
-    void OnCollisionEnter(Collision collision)
+    private void OnCollisionEnter(Collision collision)
     {
-        // Detecta se o jogador tocou o chão
         if (collision.contacts.Length > 0 && collision.contacts[0].normal.y > 0.7f)
-        {
             isGrounded = true;
+    }
+    #endregion
+
+    #region Interação
+    private void DetectarInteracao()
+    {
+        // Tecla pressionada para interagir
+        if (Input.GetKeyDown(teclaInteragir))
+        {
+            Debug.DrawRay(cameraReferencia.position, cameraReferencia.forward * alcanceInteracao, Color.red, 1f);
+            Ray ray = new Ray(cameraReferencia.position, cameraReferencia.forward);
+
+            if (Physics.Raycast(ray, out RaycastHit hit, alcanceInteracao, LayerMask.GetMask("Interagir")))
+            {
+                Item_Interação item = hit.collider.GetComponent<Item_Interação>();
+                if (item != null)
+                    item.Interagir(this); // Passa o jogador para o item
+            }
         }
     }
+    #endregion
 
-    // ===== Métodos públicos para UI =====
+    // Métodos para HUD e inventário
+    public float GetCurrentStamina() => EstaminaAtual;              // Para a UI
+    public bool IsCansado() => isCansado;                           // Estado cansado
 
-    // Retorna a estamina atual
-    public float GetCurrentStamina()
+    public void MostrarHUD(string mensagem)
     {
-        return EstaminaAtual;
+        HUD_Interação.instancia.MostrarMensagem(mensagem);
     }
 
-    // Retorna true se o jogador estiver cansado
-    public bool IsCansado()
+    // Envia notificação para a HUD (agora aceita ícone opcional)
+    public void NotificacaoInventario(string mensagem, Sprite icone = null)
     {
-        return isCansado;
+        if (HUD_Interação.instancia != null)
+            HUD_Interação.instancia.MostrarNotificacao(mensagem, icone);
+    }
+
+    // Quando adicionar item, passe nome + ícone do ItemSO
+    public void AdicionarAoInventario(ItemSO item)
+    {
+        // Use o seu gerenciador atual (Inventario.instancia OU Sistema_Inventario.instancia)
+        Sistema_Inventario.instancia.AdicionarItem(item);
+
+        // Envia notificação com imagem do item
+        NotificacaoInventario($"Pegou {item.nomeItem}", item.iconeItem);
     }
 }
