@@ -18,9 +18,9 @@ MonoBehaviour:
   tipoItem: 1
   empilhavel: 1
   quantidadeMax: 12
-  dropavel: 1
+  dropavel: 0
   podeUsar: 1
   abreJanela: 1
-  prefabMundo: {fileID: 0}
+  prefabMundo: {fileID: 1404384502363144213, guid: d717b04900ea1c241900ba24409ea5a6, type: 3}
   valorInt: 0
   valorString: 

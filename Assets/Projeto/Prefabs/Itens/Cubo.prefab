@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 8095941861152713221}
   - component: {fileID: 1094221056800880310}
   - component: {fileID: 5774163683853357956}
-  - component: {fileID: 3354120349206187260}
+  - component: {fileID: 1710273477154035442}
   m_Layer: 6
   m_Name: Cubo
   m_TagString: Untagged
@@ -128,7 +128,7 @@ MonoBehaviour:
   onInteragir:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &3354120349206187260
+--- !u!114 &1710273477154035442
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -137,12 +137,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 8649766970898219553}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2dfef5bae434cc24c915fd9c5889af95, type: 3}
+  m_Script: {fileID: 11500000, guid: 273fa2f4a5ac2c3429bbffad2c2c4669, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   item: {fileID: 11400000, guid: b34cf4723f323d04aab13c10db495f5f, type: 2}
-  podeInteragir: 1
+  popupPrefab: {fileID: 1404384502363144213, guid: d717b04900ea1c241900ba24409ea5a6, type: 3}
+  alturaPopup: 1.5
+  iconeInteracaoPopup: {fileID: 21300000, guid: d80379a82a0636f42a5eb02aebb5f743, type: 3}
   distanciaInteracao: 5
-  popupInteracao: {fileID: 0}
-  textoPopup: {fileID: 0}
-  materialContorno: {fileID: 2100000, guid: c96386017c255394bb4aaf6dff4ecdb5, type: 2}
+  precisaoOlhar: 0.95
+  teclaInteragir: 101
+  materialContorno: {fileID: 0}
+  pulsacaoMagnitude: 0.05
+  pulsacaoVel: 3
+  jogadorCamera: {fileID: 0}
