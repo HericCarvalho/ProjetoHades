@@ -15,3 +15,12 @@ MonoBehaviour:
   nomeItem: Cubo
   iconeItem: {fileID: 21300000, guid: d80379a82a0636f42a5eb02aebb5f743, type: 3}
   descricaoItem: "\xC9 um cubo"
+  tipoItem: 1
+  empilhavel: 1
+  quantidadeMax: 12
+  dropavel: 1
+  podeUsar: 1
+  abreJanela: 1
+  prefabMundo: {fileID: 0}
+  valorInt: 0
+  valorString: 

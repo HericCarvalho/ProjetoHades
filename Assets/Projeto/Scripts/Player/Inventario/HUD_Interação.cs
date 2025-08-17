@@ -1,19 +1,19 @@
-using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
+using UnityEngine.UI;
+using System.Collections;
 
 public class HUD_Interação : MonoBehaviour
 {
     public static HUD_Interação instancia;
 
-    [Header("Mensagens de Observação")]
+    [Header("Mensagens")]
     public GameObject caixaMensagem;
     public TMP_Text textoMensagem;
     public float tempoMensagem = 2f;
     public float fadeVel = 4f;
 
-    [Header("Notificação de Inventário")]
+    [Header("Notificações de Inventário")]
     public GameObject caixaNotificacao;
     public TMP_Text textoNotificacao;
     public Image imagemNotificacao;
@@ -31,134 +31,99 @@ public class HUD_Interação : MonoBehaviour
 
     void Awake()
     {
-        // Singleton
         if (instancia == null) instancia = this;
-        else { Destroy(gameObject); return; }
+        else Destroy(gameObject);
 
-        // CanvasGroup mensagem (cria se não existir)
         if (caixaMensagem != null)
         {
             cgMensagem = caixaMensagem.GetComponent<CanvasGroup>();
-            if (cgMensagem == null) cgMensagem = caixaMensagem.AddComponent<CanvasGroup>();
-            cgMensagem.alpha = 0f;
             posMensagemOriginal = caixaMensagem.transform.localPosition;
+            cgMensagem.alpha = 0;
         }
 
-        // CanvasGroup notificação (cria se não existir)
         if (caixaNotificacao != null)
         {
             cgNotificacao = caixaNotificacao.GetComponent<CanvasGroup>();
-            if (cgNotificacao == null) cgNotificacao = caixaNotificacao.AddComponent<CanvasGroup>();
-            cgNotificacao.alpha = 0f;
             posNotificacaoOriginal = caixaNotificacao.transform.localPosition;
+            cgNotificacao.alpha = 0;
         }
     }
 
-    // ====== MENSAGEM (observável) ======
-    public void MostrarMensagem(string mensagem)
+    public void MostrarMensagem(string texto)
     {
-        if (caixaMensagem == null || textoMensagem == null || cgMensagem == null) return;
+        if (mensagemCoroutine != null)
+            StopCoroutine(mensagemCoroutine);
 
-        if (mensagemCoroutine != null) StopCoroutine(mensagemCoroutine);
-        mensagemCoroutine = StartCoroutine(MostrarMensagemRotina(mensagem));
+        mensagemCoroutine = StartCoroutine(MostrarMensagemCoroutine(texto));
     }
 
-    private IEnumerator MostrarMensagemRotina(string mensagem)
+    IEnumerator MostrarMensagemCoroutine(string texto)
     {
-        // set
-        if (!caixaMensagem.activeSelf) caixaMensagem.SetActive(true);
-        textoMensagem.text = mensagem;
-        caixaMensagem.transform.localScale = Vector3.one;
+        textoMensagem.text = texto;
+        cgMensagem.alpha = 0;
         caixaMensagem.transform.localPosition = posMensagemOriginal;
+        caixaMensagem.SetActive(true);
 
-        // fade in
+        // Fade in
         while (cgMensagem.alpha < 1f)
         {
             cgMensagem.alpha += Time.deltaTime * fadeVel;
             yield return null;
         }
 
-        // pulsação durante o tempo
-        float t = 0f;
-        while (t < tempoMensagem)
-        {
-            t += Time.deltaTime;
-            float s = 1f + Mathf.Sin(Time.time * pulsacaoVel) * pulsacaoMagnitude;
-            caixaMensagem.transform.localScale = Vector3.one * s;
-            yield return null;
-        }
+        // Espera
+        yield return new WaitForSeconds(tempoMensagem);
 
-        // fade out
+        // Fade out
         while (cgMensagem.alpha > 0f)
         {
             cgMensagem.alpha -= Time.deltaTime * fadeVel;
             yield return null;
         }
 
-        caixaMensagem.transform.localScale = Vector3.one;
         caixaMensagem.SetActive(false);
     }
 
-    // ====== NOTIFICAÇÃO (coleta) ======
-
-    // SOBRECARGA 1: compatível com chamadas antigas (só texto)
-    public void MostrarNotificacao(string mensagem)
+    public void MostrarNotificacao(string texto, Sprite imagem)
     {
-        MostrarNotificacao(mensagem, null);
+        if (notificacaoCoroutine != null)
+            StopCoroutine(notificacaoCoroutine);
+
+        notificacaoCoroutine = StartCoroutine(MostrarNotificacaoCoroutine(texto, imagem));
     }
 
-    // SOBRECARGA 2: texto + sprite (imagem opcional)
-    public void MostrarNotificacao(string mensagem, Sprite imagem)
+    IEnumerator MostrarNotificacaoCoroutine(string texto, Sprite imagem)
     {
-        if (caixaNotificacao == null || textoNotificacao == null || cgNotificacao == null) return;
-
-        if (notificacaoCoroutine != null) StopCoroutine(notificacaoCoroutine);
-        notificacaoCoroutine = StartCoroutine(MostrarNotificacaoRotina(mensagem, imagem));
-    }
-
-    private IEnumerator MostrarNotificacaoRotina(string mensagem, Sprite imagem)
-    {
-        // set
-        if (!caixaNotificacao.activeSelf) caixaNotificacao.SetActive(true);
-        textoNotificacao.text = mensagem;
-
-        if (imagemNotificacao != null)
-        {
-            if (imagem != null)
-            {
-                imagemNotificacao.sprite = imagem;
-                imagemNotificacao.enabled = true;
-            }
-            else
-            {
-                imagemNotificacao.enabled = false; // se não tiver sprite, oculta a imagem
-            }
-        }
-
-        caixaNotificacao.transform.localScale = Vector3.one;
+        textoNotificacao.text = texto;
+        imagemNotificacao.sprite = imagem;
+        cgNotificacao.alpha = 0;
         caixaNotificacao.transform.localPosition = posNotificacaoOriginal;
+        caixaNotificacao.SetActive(true);
 
-        // fade in
+        float t = 0f;
+        Vector3 basePos = posNotificacaoOriginal;
+
+        // Fade in com leve pulsação
         while (cgNotificacao.alpha < 1f)
         {
             cgNotificacao.alpha += Time.deltaTime * fadeVelNotificacao;
+            // Pulsação leve
+            t += Time.deltaTime * pulsacaoVel;
+            caixaNotificacao.transform.localScale = Vector3.one * (1 + Mathf.Sin(t) * pulsacaoMagnitude);
             yield return null;
         }
 
-        // pulsação durante o tempo
-        float t = 0f;
-        while (t < tempoNotificacao)
-        {
-            t += Time.deltaTime;
-            float s = 1f + Mathf.Sin(Time.time * pulsacaoVel) * pulsacaoMagnitude;
-            caixaNotificacao.transform.localScale = Vector3.one * s;
-            yield return null;
-        }
+        caixaNotificacao.transform.localScale = Vector3.one;
 
-        // fade out
+        yield return new WaitForSeconds(tempoNotificacao);
+
+        // Fade out com suavização
+        t = 0f;
         while (cgNotificacao.alpha > 0f)
         {
             cgNotificacao.alpha -= Time.deltaTime * fadeVelNotificacao;
+            t += Time.deltaTime * pulsacaoVel;
+            caixaNotificacao.transform.localScale = Vector3.one * (1 + Mathf.Sin(t) * pulsacaoMagnitude);
             yield return null;
         }
 

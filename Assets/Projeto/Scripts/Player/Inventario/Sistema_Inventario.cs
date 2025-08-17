@@ -1,91 +1,157 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 public class Sistema_Inventario : MonoBehaviour
 {
-    public static Sistema_Inventario instancia;   // Singleton para acesso global
+    public static Sistema_Inventario instancia;
+
+    [Header("Camera")]
+    [SerializeField] private MonoBehaviour cameraMovimento;
 
     [Header("UI do Inventário")]
-    public GameObject painelInventario;           // Painel principal do inventário
-    public Transform conteudoInventario;          // Onde os slots serão instanciados
-    public GameObject prefabSlot;                 // Prefab de cada slot
+    public GameObject painelInventario;
+    public Transform conteudoInventario;
+    public GameObject prefabSlot;
 
-    private bool inventarioAberto = false;        // Estado do inventário
-    private List<ItemSO> itensNoInventario = new List<ItemSO>(); // Lista interna de itens
+    [Header("Popup de Itens")]
+    public GameObject popupMenu; // Mini-menu de opções
+    public Button botaoUsarPopup;
+    public Button botaoCancelarPopup;
+
+    private bool inventarioAberto = false;
+    private List<ItemSO> itensNoInventario = new List<ItemSO>();
+    private SlotInventario slotSelecionado;
 
     void Awake()
     {
-        // Singleton
         if (instancia == null) instancia = this;
         else Destroy(gameObject);
 
-        // Painel começa fechado
         painelInventario.SetActive(false);
+        if (popupMenu != null)
+            popupMenu.SetActive(false);
     }
 
     void Update()
     {
-        // Tecla para abrir/fechar inventário
         if (Input.GetKeyDown(KeyCode.I))
             AlternarInventario();
     }
 
-    // Alterna o estado do inventário
     public void AlternarInventario()
     {
         inventarioAberto = !inventarioAberto;
         painelInventario.SetActive(inventarioAberto);
 
-        // Controla cursor
         Cursor.lockState = inventarioAberto ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = inventarioAberto;
 
-        // Atualiza slots sempre que abrir
-        if (inventarioAberto)
-            AtualizarUI();
+        if (cameraMovimento != null) cameraMovimento.enabled = !inventarioAberto;
+
+        if (inventarioAberto) AtualizarUI();
+        if (!inventarioAberto && popupMenu != null)
+            popupMenu.SetActive(false);
     }
 
-    // Adiciona um item e atualiza a UI
     public void AdicionarItem(ItemSO item)
     {
         itensNoInventario.Add(item);
-        HUD_Interação.instancia.MostrarNotificacao($"Pegou {item.nomeItem}", item.iconeItem); // exibe notificação
-        if (inventarioAberto)
-            AtualizarUI();
+        HUD_Interação.instancia.MostrarNotificacao($"Pegou {item.nomeItem}", item.iconeItem);
+        if (inventarioAberto) AtualizarUI();
     }
 
-    // Remove um item e atualiza a UI
     public void RemoverItem(ItemSO item)
     {
-        itensNoInventario.Remove(item);
-        if (inventarioAberto)
-            AtualizarUI();
+        if (itensNoInventario.Contains(item))
+        {
+            itensNoInventario.Remove(item);
+            HUD_Interação.instancia.MostrarNotificacao($"Usou {item.nomeItem}", item.iconeItem);
+        }
+
+        if (inventarioAberto) AtualizarUI();
     }
 
-    // Atualiza visualmente os slots do inventário
     private void AtualizarUI()
     {
-        // Limpa slots antigos
         foreach (Transform t in conteudoInventario)
             Destroy(t.gameObject);
 
-        // Cria slots novos
         foreach (ItemSO item in itensNoInventario)
         {
-            GameObject slot = Instantiate(prefabSlot, conteudoInventario);
-            slot.GetComponent<SlotInventario>().ConfigurarSlot(item);
+            GameObject slotGO = Instantiate(prefabSlot, conteudoInventario);
+            SlotInventario slot = slotGO.GetComponent<SlotInventario>();
+            slot.ConfigurarSlot(item);
+            slot.botao.onClick.RemoveAllListeners();
+            slot.botao.onClick.AddListener(() => AbrirPopup(slot));
         }
     }
 
-    // Fecha o inventário por script
+    public void AbrirPopup(SlotInventario slot)
+    {
+        slotSelecionado = slot;
+        if (popupMenu != null)
+        {
+            popupMenu.SetActive(true);
+            popupMenu.transform.position = Input.mousePosition; // Aparece próximo ao mouse
+
+            botaoUsarPopup.onClick.RemoveAllListeners();
+            botaoCancelarPopup.onClick.RemoveAllListeners();
+
+            botaoUsarPopup.onClick.AddListener(() => {
+                UsarItem(slotSelecionado);
+                FecharPopup();
+            });
+
+            botaoCancelarPopup.onClick.AddListener(() => FecharPopup());
+        }
+    }
+
+    private void FecharPopup()
+    {
+        if (popupMenu != null)
+            popupMenu.SetActive(false);
+        slotSelecionado = null;
+    }
+
+    private void UsarItem(SlotInventario slot)
+    {
+        if (slot == null || slot.itemAtual == null) return;
+
+        ItemSO item = slot.itemAtual;
+
+        switch (item.tipoItem)
+        {
+            case TipoItem.ColetavelConsumivel:
+                slot.UsarItem(); // Reduz quantidade ou remove
+                break;
+
+            case TipoItem.Especial:
+                Debug.Log($"Item especial usado: {item.nomeItem}");
+                // Adicione lógica especial aqui
+                break;
+
+            case TipoItem.Interativo:
+                Debug.Log($"Interagiu com: {item.nomeItem}");
+                if (item.abreJanela && item.prefabMundo != null)
+                    Instantiate(item.prefabMundo); // Mostra conteúdo do item
+                break;
+        }
+    }
+
     public void FecharInventario()
     {
         inventarioAberto = false;
         painelInventario.SetActive(false);
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        if (cameraMovimento != null) cameraMovimento.enabled = true;
+
+        if (popupMenu != null)
+            popupMenu.SetActive(false);
     }
 
-    // Para obter a lista de itens de outros scripts
     public List<ItemSO> GetItens() => itensNoInventario;
 }
