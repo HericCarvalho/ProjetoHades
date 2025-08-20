@@ -160,7 +160,7 @@ public class MovimentaçãoPlayer : MonoBehaviour
 
             if (Physics.Raycast(ray, out RaycastHit hit, alcanceInteracao, LayerMask.GetMask("Interagir")))
             {
-                Item_Interação item = hit.collider.GetComponent<Item_Interação>();
+                ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
                 if (item != null)
                     item.Interagir(this); // Passa o jogador para o item
             }
@@ -174,21 +174,21 @@ public class MovimentaçãoPlayer : MonoBehaviour
 
     public void MostrarHUD(string mensagem)
     {
-        HUD_Interação.instancia.MostrarMensagem(mensagem);
+        HUD_Interacao.instancia.MostrarMensagem(mensagem);
     }
 
     // Envia notificação para a HUD (agora aceita ícone opcional)
     public void NotificacaoInventario(string mensagem, Sprite icone = null)
     {
-        if (HUD_Interação.instancia != null)
-            HUD_Interação.instancia.MostrarNotificacao(mensagem, icone);
+        if (HUD_Interacao.instancia != null)
+            HUD_Interacao.instancia.MostrarNotificacao(mensagem, icone);
     }
 
     // Quando adicionar item, passe nome + ícone do ItemSO
-    public void AdicionarAoInventario(ItemSO item)
+    public void AdicionarAoInventario(ItemSistema item)
     {
         // Use o seu gerenciador atual (Inventario.instancia OU Sistema_Inventario.instancia)
-        Sistema_Inventario.instancia.AdicionarItem(item);
+        SistemaInventario.instancia.AdicionarItem(item);
 
         // Envia notificação com imagem do item
         NotificacaoInventario($"Pegou {item.nomeItem}", item.iconeItem);

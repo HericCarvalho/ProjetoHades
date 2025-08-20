@@ -416,17 +416,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 267912b5a2790bd4ea1349667caac863, type: 3}
---- !u!114 &47216906 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1207456174591277198, guid: 267912b5a2790bd4ea1349667caac863, type: 3}
-  m_PrefabInstance: {fileID: 47216905}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &47216907 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5289125958044907052, guid: 267912b5a2790bd4ea1349667caac863, type: 3}
@@ -436,17 +425,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c73df248df50d6f489ae157b3bc02afb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &47216908 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5005984024082696143, guid: 267912b5a2790bd4ea1349667caac863, type: 3}
-  m_PrefabInstance: {fileID: 47216905}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &47216909 stripped
@@ -2004,7 +1982,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1070516488}
-  - component: {fileID: 1070516489}
   m_Layer: 0
   m_Name: SistemaInventario
   m_TagString: Untagged
@@ -2027,25 +2004,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1914203707}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1070516489
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1070516487}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae9225b619191ca498a86db0f5631dd9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cameraMovimento: {fileID: 1423688035}
-  painelInventario: {fileID: 1040316173}
-  conteudoInventario: {fileID: 821392017}
-  prefabSlot: {fileID: 8691191461439425092, guid: c71217a90c1a36a46b0b3cb6d0f756d8, type: 3}
-  popupMenu: {fileID: 47216909}
-  botaoUsarPopup: {fileID: 47216908}
-  botaoCancelarPopup: {fileID: 47216906}
 --- !u!1 &1099823916
 GameObject:
   m_ObjectHideFlags: 0

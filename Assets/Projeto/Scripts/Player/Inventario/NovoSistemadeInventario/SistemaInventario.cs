@@ -1,15 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
-public class Sistema_Inventario : MonoBehaviour
+public class SistemaInventario : MonoBehaviour
 {
-    public static Sistema_Inventario instancia;
+    public static SistemaInventario instancia;
 
-    [Header("Camera")]
-    [SerializeField] private MonoBehaviour cameraMovimento;
-
-    [Header("UI Inventário")]
+    [Header("UI do Inventário")]
     public GameObject painelInventario;
     public Transform conteudoInventario;
     public GameObject prefabSlot;
@@ -20,7 +18,7 @@ public class Sistema_Inventario : MonoBehaviour
     public Button botaoCancelarPopup;
 
     private bool inventarioAberto = false;
-    private List<ItemSO> itensNoInventario = new List<ItemSO>();
+    private List<ItemSistema> itensNoInventario = new List<ItemSistema>();
     private SlotInventario slotSelecionado;
 
     void Awake()
@@ -43,65 +41,69 @@ public class Sistema_Inventario : MonoBehaviour
         painelInventario.SetActive(inventarioAberto);
         Cursor.lockState = inventarioAberto ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = inventarioAberto;
-        if (cameraMovimento != null) cameraMovimento.enabled = !inventarioAberto;
+
         if (inventarioAberto) AtualizarUI();
         else if (popupMenu != null) popupMenu.SetActive(false);
     }
 
-    public void AdicionarItem(ItemSO item)
+    public void AdicionarItem(ItemSistema item)
     {
         itensNoInventario.Add(item);
         HUD_Interacao.instancia?.MostrarNotificacao($"Pegou {item.nomeItem}", item.iconeItem);
         if (inventarioAberto) AtualizarUI();
     }
 
-    public void RemoverQuantidade(ItemSO item, int quantidade)
+    public void RemoverItem(ItemSistema item)
     {
-        if (item == null || quantidade <= 0) return;
-        if (!itensNoInventario.Contains(item)) return;
-
-        for (int i = 0; i < quantidade && itensNoInventario.Contains(item); i++)
+        if (itensNoInventario.Contains(item))
+        {
             itensNoInventario.Remove(item);
-
-        HUD_Interacao.instancia?.MostrarNotificacao($"Removeu {item.nomeItem}", item.iconeItem);
-        if (inventarioAberto) AtualizarUI();
+            HUD_Interacao.instancia?.MostrarNotificacao($"Usou {item.nomeItem}", item.iconeItem);
+            AtualizarUI();
+        }
     }
 
     private void AtualizarUI()
     {
         foreach (Transform t in conteudoInventario) Destroy(t.gameObject);
 
-        foreach (ItemSO item in itensNoInventario)
+        foreach (ItemSistema item in itensNoInventario)
         {
             GameObject slotGO = Instantiate(prefabSlot, conteudoInventario);
             SlotInventario slot = slotGO.GetComponent<SlotInventario>();
-            slot.ConfigurarSlot(item, 1, this);
+            slot.ConfigurarSlot(item);
+            slot.botaoSlot.onClick.RemoveAllListeners();
+            slot.botaoSlot.onClick.AddListener(() => AbrirPopup(slot));
         }
     }
 
     public void AbrirPopup(SlotInventario slot)
     {
         slotSelecionado = slot;
-        if (popupMenu == null) return;
-
-        popupMenu.SetActive(true);
-        popupMenu.transform.position = Input.mousePosition;
-
-        botaoUsarPopup.onClick.RemoveAllListeners();
-        botaoCancelarPopup.onClick.RemoveAllListeners();
-
-        botaoUsarPopup.onClick.AddListener(() =>
+        if (popupMenu != null)
         {
-            slotSelecionado?.UsarItem();
-            FecharPopup();
-        });
+            popupMenu.SetActive(true);
+            popupMenu.transform.position = Input.mousePosition;
 
-        botaoCancelarPopup.onClick.AddListener(() => FecharPopup());
+            botaoUsarPopup.onClick.RemoveAllListeners();
+            botaoCancelarPopup.onClick.RemoveAllListeners();
+
+            botaoUsarPopup.onClick.AddListener(() =>
+            {
+                slotSelecionado?.UsarItem();
+                FecharPopup();
+            });
+            botaoCancelarPopup.onClick.AddListener(() => FecharPopup());
+        }
     }
 
-    public void FecharPopup()
+    private void FecharPopup()
     {
         if (popupMenu != null) popupMenu.SetActive(false);
         slotSelecionado = null;
     }
+
+    public List<ItemSistema> GetItens() => itensNoInventario;
+
+
 }
