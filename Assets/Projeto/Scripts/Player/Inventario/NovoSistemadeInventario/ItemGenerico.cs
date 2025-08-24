@@ -5,6 +5,6 @@ public class ItemGenerico : ItemSistema
 {
     public override void Usar()
     {
-        Debug.Log($"Você usou o item: {nomeItem}!");
+        HUD_Interacao.instancia.MostrarNotificacao("Novo item adquirido!", iconeItem);
     }
 }

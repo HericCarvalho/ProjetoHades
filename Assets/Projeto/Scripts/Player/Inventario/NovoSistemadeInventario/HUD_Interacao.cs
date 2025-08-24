@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 public class HUD_Interacao : MonoBehaviour
 {
@@ -29,6 +30,10 @@ public class HUD_Interacao : MonoBehaviour
     private Vector3 posMensagemOriginal;
     private Vector3 posNotificacaoOriginal;
 
+    // ?? Fila de notificações
+    private Queue<(string texto, Sprite imagem)> filaNotificacoes = new Queue<(string, Sprite)>();
+    private bool mostrandoNotificacao = false;
+
     void Awake()
     {
         if (instancia == null) instancia = this;
@@ -49,6 +54,7 @@ public class HUD_Interacao : MonoBehaviour
         }
     }
 
+    #region Mensagens
     public void MostrarMensagem(string texto)
     {
         if (mensagemCoroutine != null) StopCoroutine(mensagemCoroutine);
@@ -67,7 +73,9 @@ public class HUD_Interacao : MonoBehaviour
         while (cgMensagem.alpha > 0f) { cgMensagem.alpha -= Time.deltaTime * fadeVel; yield return null; }
         caixaMensagem.SetActive(false);
     }
+    #endregion
 
+    #region Notificações
     public void MostrarNotificacao(string texto, Sprite imagem)
     {
         if (notificacaoCoroutine != null) StopCoroutine(notificacaoCoroutine);
@@ -78,6 +86,10 @@ public class HUD_Interacao : MonoBehaviour
     {
         textoNotificacao.text = texto;
         imagemNotificacao.sprite = imagem;
+
+        // garante que a imagem está ativa
+        if (imagemNotificacao != null) imagemNotificacao.enabled = true;
+
         cgNotificacao.alpha = 0;
         caixaNotificacao.transform.localPosition = posNotificacaoOriginal;
         caixaNotificacao.SetActive(true);
@@ -108,4 +120,18 @@ public class HUD_Interacao : MonoBehaviour
         caixaNotificacao.transform.localScale = Vector3.one;
         caixaNotificacao.SetActive(false);
     }
+
+    IEnumerator ProcessarFilaNotificacoes()
+    {
+        mostrandoNotificacao = true;
+
+        while (filaNotificacoes.Count > 0)
+        {
+            var notif = filaNotificacoes.Dequeue();
+            yield return StartCoroutine(MostrarNotificacaoCoroutine(notif.texto, notif.imagem));
+        }
+
+        mostrandoNotificacao = false;
+    }
+    #endregion
 }
