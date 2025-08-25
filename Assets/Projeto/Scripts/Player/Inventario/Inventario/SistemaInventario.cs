@@ -29,6 +29,10 @@ public class SistemaInventario : MonoBehaviour
     public Button botaoUsarPopup;
     public Button botaoCancelarPopup;
 
+    [Header("Controle do Jogador")]
+    [SerializeField] private MonoBehaviour playerController; // arraste seu script de movimento aqui
+    [SerializeField] private MonoBehaviour playerCamera;    // arraste seu script de câmera aqui
+
     private bool inventarioAberto = false;
     private List<EntradaInventario> itensNoInventario = new List<EntradaInventario>();
     private SlotInventario slotSelecionado;
@@ -57,15 +61,30 @@ public class SistemaInventario : MonoBehaviour
         Cursor.lockState = inventarioAberto ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = inventarioAberto;
 
+        // Ativa/Desativa controle do player e da câmera
+        if (playerController != null) playerController.enabled = !inventarioAberto;
+        if (playerCamera != null) playerCamera.enabled = !inventarioAberto;
+
         if (inventarioAberto) AtualizarUI();
         else if (popupMenu != null) popupMenu.SetActive(false);
     }
+
+    private readonly Dictionary<ItemSistema, float> _ultimoAddTempo = new Dictionary<ItemSistema, float>();
+    private const float _janelaAntiBounce = 0.05f; // 50 ms
 
     public void AdicionarItem(ItemSistema item, int quantidade = 1)
     {
         if (item == null || quantidade <= 0) return;
 
-        // Procura entrada existente
+        // Anti-bounce: ignora adições do mesmo item dentro de 50ms
+        if (_ultimoAddTempo.TryGetValue(item, out float tUlt) &&
+            (Time.unscaledTime - tUlt) < _janelaAntiBounce)
+        {
+            Debug.LogWarning($"[Inventário] Adição ignorada (anti-bounce): {item.nomeItem}");
+            return;
+        }
+        _ultimoAddTempo[item] = Time.unscaledTime;
+
         var entrada = itensNoInventario.Find(e => e.item == item);
         if (entrada != null) entrada.quantidade += quantidade;
         else itensNoInventario.Add(new EntradaInventario(item, quantidade));
@@ -95,11 +114,9 @@ public class SistemaInventario : MonoBehaviour
             return;
         }
 
-        // Limpa tudo
         for (int i = conteudoInventario.childCount - 1; i >= 0; i--)
             Destroy(conteudoInventario.GetChild(i).gameObject);
 
-        // Recria slots
         foreach (var entrada in itensNoInventario)
         {
             var slotGO = Instantiate(prefabSlot, conteudoInventario);
@@ -133,7 +150,6 @@ public class SistemaInventario : MonoBehaviour
             botaoUsarPopup.onClick.RemoveAllListeners();
             botaoUsarPopup.onClick.AddListener(() =>
             {
-                // Usa 1 unidade do item do slot selecionado
                 var item = slotSelecionado?.GetItem();
                 if (item != null)
                 {

@@ -4,30 +4,43 @@ using UnityEngine.Events;
 public class MovimentaçãoPlayer : MonoBehaviour
 {
     [Header("Movimento")]
-    [SerializeField] private float velocidade;                      // Velocidade normal
-    [SerializeField] private float velocidadeAgachado;              // Velocidade ao agachar
-    [SerializeField] private float VelocidadeCorrendo;              // Velocidade ao correr
-    [SerializeField] private float velocidadeCansado;               // Velocidade reduzida por cansaço
-    [SerializeField] private float PuloForca;                       // Força do pulo
-    [SerializeField] private float MouseSensibilidade;              // Sensibilidade do mouse
+    [SerializeField] private float velocidade;
+    [SerializeField] private float velocidadeAgachado;
+    [SerializeField] private float VelocidadeCorrendo;
+    [SerializeField] private float velocidadeCansado;
+    [SerializeField] private float PuloForca;
+    [SerializeField] private float MouseSensibilidade;
 
     [Header("Câmera")]
-    [SerializeField] private Transform cameraReferencia;            // Referência da câmera
-    [SerializeField] private float AlturaEmPé;                      // Altura normal
-    [SerializeField] private float AlturaAgachado;                  // Altura agachado
-    [SerializeField] private float VelocidadeTransição;             // Velocidade da transição da altura
+    [SerializeField] private Transform cameraReferencia;
+    [SerializeField] private float AlturaEmPé;
+    [SerializeField] private float AlturaAgachado;
+    [SerializeField] private float VelocidadeTransição;
+
+    [Header("Headbob (balanço da câmera)")]
+    [SerializeField] private float intensidadeVertical = 0.05f;
+    [SerializeField] private float intensidadeHorizontal = 0.03f;
+    [SerializeField] private float intensidadeRotacao = 1.5f;
+    [SerializeField] private float velocidadeBob = 6f;
+    [SerializeField] private float intensidadeTremor = 0.01f;
+    private float contadorMovimento;
+    private Vector3 posicaoInicialCamera;
+    private Quaternion rotacaoInicialCamera;
+    private bool passoTocado;
+
+    [Header("Sons de passos")]
+    [SerializeField] private AudioSource audioPassos;
+    [SerializeField] private AudioClip somPasso;
 
     [Header("Stamina")]
-    [SerializeField] public float MaxEstamina;                      // Stamina máxima
-    [SerializeField] private float RegeneracaoEstamina;             // Quanto a stamina recupera por segundo
-    [SerializeField] private float EstaminaGasta;                   // Quanto a stamina consome ao correr
+    [SerializeField] public float MaxEstamina;
+    [SerializeField] private float RegeneracaoEstamina;
+    [SerializeField] private float EstaminaGasta;
 
     [Header("Interação")]
-    [SerializeField] private float alcanceInteracao = 2f;           // Distância máxima para interagir
-    [SerializeField] private KeyCode teclaInteragir = KeyCode.E;    // Tecla para interação
-    
+    [SerializeField] private float alcanceInteracao = 2f;
+    [SerializeField] private KeyCode teclaInteragir = KeyCode.E;
 
-    // Estados internos
     private float EstaminaAtual;
     private bool podeCorrer = true;
     private bool isCrouching = false;
@@ -40,18 +53,90 @@ public class MovimentaçãoPlayer : MonoBehaviour
     private void Start()
     {
         RB = GetComponent<Rigidbody>();
-        Cursor.lockState = CursorLockMode.Locked;   // Trava cursor na tela
-        EstaminaAtual = MaxEstamina;               // Começa com stamina cheia
+        Cursor.lockState = CursorLockMode.Locked;
+        EstaminaAtual = MaxEstamina;
+
+        if (cameraReferencia != null)
+        {
+            posicaoInicialCamera = cameraReferencia.localPosition;
+            rotacaoInicialCamera = cameraReferencia.localRotation;
+        }
+
+        if (audioPassos == null)
+            Debug.LogWarning("AudioSource de passos não atribuído!");
     }
 
     private void Update()
     {
-        RotacaoMouse();       // Rotaciona o jogador e a câmera
-        PuloAgachar();        // Controla pulo e agachar
-        SistemaStamina();     // Atualiza a stamina e estado cansado
-        AlturaCamera();       // Ajusta altura da câmera suavemente
-        DetectarInteracao();  // Detecta se o jogador quer interagir
+        RotacaoMouse();
+        PuloAgachar();
+        SistemaStamina();
+        AlturaCamera();
+        DetectarInteracao();
+        HeadbobAvancado();
     }
+
+    #region Headbob
+    private void HeadbobAvancado()
+    {
+        if (!isGrounded || cameraReferencia == null) return;
+
+        // Velocidade horizontal do jogador
+        Vector3 horizontalVel = new Vector3(RB.linearVelocity.x, 0, RB.linearVelocity.z);
+        float velocidadeAtual = horizontalVel.magnitude;
+
+        if (velocidadeAtual > 0.1f)
+        {
+            contadorMovimento += Time.deltaTime * velocidadeBob;
+
+            // Offset vertical e lateral
+            float offsetY = Mathf.Sin(contadorMovimento) * intensidadeVertical;
+            float offsetX = Mathf.Cos(contadorMovimento * 0.5f) * intensidadeHorizontal;
+            float rotZ = Mathf.Sin(contadorMovimento * 0.5f) * intensidadeRotacao;
+
+            // Micro-tremor
+            Vector3 tremor = Vector3.zero;
+            if ((Input.GetKey(KeyCode.LeftShift) && !isCrouching) || isCansado)
+            {
+                tremor.x = Random.Range(-intensidadeTremor, intensidadeTremor);
+                tremor.y = Random.Range(-intensidadeTremor, intensidadeTremor);
+            }
+
+            // Aplica suavemente posição e rotação
+            Vector3 targetPos = posicaoInicialCamera + new Vector3(offsetX, offsetY, 0) + tremor;
+            cameraReferencia.localPosition = Vector3.Lerp(cameraReferencia.localPosition, targetPos, Time.deltaTime * 10f);
+
+            Quaternion targetRot = rotacaoInicialCamera * Quaternion.Euler(0, 0, rotZ);
+            cameraReferencia.localRotation = Quaternion.Slerp(cameraReferencia.localRotation, targetRot, Time.deltaTime * 10f);
+
+            // Som de passo
+            if (!passoTocado && offsetY > intensidadeVertical * 0.8f)
+            {
+                TocarSomPasso();
+                passoTocado = true;
+            }
+            else if (offsetY < 0)
+            {
+                passoTocado = false;
+            }
+        }
+        else
+        {
+            cameraReferencia.localPosition = Vector3.Lerp(cameraReferencia.localPosition, posicaoInicialCamera, Time.deltaTime * 5f);
+            cameraReferencia.localRotation = Quaternion.Slerp(cameraReferencia.localRotation, rotacaoInicialCamera, Time.deltaTime * 5f);
+            contadorMovimento = 0f;
+        }
+    }
+
+    private void TocarSomPasso()
+    {
+        if (audioPassos != null && somPasso != null)
+        {
+            audioPassos.pitch = 0.9f + Random.Range(0f, 0.2f);
+            audioPassos.PlayOneShot(somPasso);
+        }
+    }
+    #endregion
 
     #region Movimento e câmera
     private void RotacaoMouse()
@@ -62,19 +147,17 @@ public class MovimentaçãoPlayer : MonoBehaviour
         float mouseY = Input.GetAxis("Mouse Y") * MouseSensibilidade;
         RotacaoVertical -= mouseY;
         RotacaoVertical = Mathf.Clamp(RotacaoVertical, -80f, 80f);
-        cameraReferencia.localRotation = Quaternion.Euler(RotacaoVertical, 0f, 0f);
+        cameraReferencia.localRotation = Quaternion.Euler(RotacaoVertical, 0f, cameraReferencia.localRotation.eulerAngles.z);
     }
 
     private void PuloAgachar()
     {
-        // Pulo
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             RB.AddForce(Vector3.up * PuloForca, ForceMode.Impulse);
             isGrounded = false;
         }
 
-        // Toggle agachar
         if (Input.GetKeyDown(KeyCode.LeftControl))
             isCrouching = !isCrouching;
     }
@@ -88,7 +171,7 @@ public class MovimentaçãoPlayer : MonoBehaviour
     }
     #endregion
 
-    #region Stamina e estados
+    #region Stamina
     private void SistemaStamina()
     {
         bool tentandoCorrer = Input.GetKey(KeyCode.LeftShift) && !isCrouching && !isCansado;
@@ -96,8 +179,6 @@ public class MovimentaçãoPlayer : MonoBehaviour
         if (tentandoCorrer)
         {
             EstaminaAtual -= EstaminaGasta * Time.deltaTime;
-
-            // Se acabar a stamina, jogador fica cansado
             if (EstaminaAtual <= 0f)
             {
                 EstaminaAtual = 0f;
@@ -108,8 +189,6 @@ public class MovimentaçãoPlayer : MonoBehaviour
         else
         {
             EstaminaAtual += RegeneracaoEstamina * Time.deltaTime;
-
-            // Se recuperar totalmente, volta ao normal
             if (EstaminaAtual >= MaxEstamina)
             {
                 EstaminaAtual = MaxEstamina;
@@ -126,9 +205,7 @@ public class MovimentaçãoPlayer : MonoBehaviour
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
 
-        // Determina velocidade atual
         float currentSpeed;
-
         if (isCrouching)
             currentSpeed = velocidadeAgachado;
         else if (Input.GetKey(KeyCode.LeftShift) && !isCansado && EstaminaAtual > 0)
@@ -152,7 +229,6 @@ public class MovimentaçãoPlayer : MonoBehaviour
     #region Interação
     private void DetectarInteracao()
     {
-        // Tecla pressionada para interagir
         if (Input.GetKeyDown(teclaInteragir))
         {
             Debug.DrawRay(cameraReferencia.position, cameraReferencia.forward * alcanceInteracao, Color.red, 1f);
@@ -162,35 +238,12 @@ public class MovimentaçãoPlayer : MonoBehaviour
             {
                 ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
                 if (item != null)
-                    item.Interagir(this); // Passa o jogador para o item
+                    item.Interagir(this);
             }
         }
     }
     #endregion
 
-    // Métodos para HUD e inventário
-    public float GetCurrentStamina() => EstaminaAtual;              // Para a UI
-    public bool IsCansado() => isCansado;                           // Estado cansado
-
-    public void MostrarHUD(string mensagem)
-    {
-        HUD_Interacao.instancia.MostrarMensagem(mensagem);
-    }
-
-    // Envia notificação para a HUD (agora aceita ícone opcional)
-    public void NotificacaoInventario(string mensagem, Sprite icone = null)
-    {
-        if (HUD_Interacao.instancia != null)
-            HUD_Interacao.instancia.MostrarNotificacao(mensagem, icone);
-    }
-
-    // Quando adicionar item, passe nome + ícone do ItemSO
-    public void AdicionarAoInventario(ItemSistema item)
-    {
-        // Use o seu gerenciador atual (Inventario.instancia OU Sistema_Inventario.instancia)
-        SistemaInventario.instancia.AdicionarItem(item);
-
-        // Envia notificação com imagem do item
-        NotificacaoInventario($"Pegou {item.nomeItem}", item.iconeItem);
-    }
+    public float GetCurrentStamina() => EstaminaAtual;
+    public bool IsCansado() => isCansado;
 }
