@@ -12,8 +12,8 @@ GameObject:
   - component: {fileID: 6848447608797944218}
   - component: {fileID: 8095941861152713221}
   - component: {fileID: 1094221056800880310}
-  - component: {fileID: 5774163683853357956}
-  - component: {fileID: 1710273477154035442}
+  - component: {fileID: 7317234770385277309}
+  - component: {fileID: 9104480371206491085}
   m_Layer: 6
   m_Name: Cubo
   m_TagString: Untagged
@@ -110,7 +110,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5774163683853357956
+--- !u!114 &7317234770385277309
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -119,16 +119,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 8649766970898219553}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b469f55fbfd71e43bfc4e6c3c71c5ef, type: 3}
+  m_Script: {fileID: 11500000, guid: 2b3953a1a661d8848a91030776490823, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tipo: 1
-  descricao: "\xC9 um cubo"
-  itemColetavel: {fileID: 11400000, guid: b34cf4723f323d04aab13c10db495f5f, type: 2}
+  tipo: 0
+  descricao: cubo
+  itemColetavel: {fileID: 11400000, guid: f822454359f03c947a7501726cdce72b, type: 2}
   onInteragir:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &1710273477154035442
+--- !u!114 &9104480371206491085
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -137,17 +137,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 8649766970898219553}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 273fa2f4a5ac2c3429bbffad2c2c4669, type: 3}
+  m_Script: {fileID: 11500000, guid: acf5fc23c37f4824c82459bd45421980, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  item: {fileID: 11400000, guid: b34cf4723f323d04aab13c10db495f5f, type: 2}
-  popupPrefab: {fileID: 1404384502363144213, guid: d717b04900ea1c241900ba24409ea5a6, type: 3}
-  alturaPopup: 1.5
-  iconeInteracaoPopup: {fileID: 21300000, guid: d80379a82a0636f42a5eb02aebb5f743, type: 3}
-  distanciaInteracao: 5
-  precisaoOlhar: 0.95
-  teclaInteragir: 101
-  materialContorno: {fileID: 0}
-  pulsacaoMagnitude: 0.05
-  pulsacaoVel: 3
-  jogadorCamera: {fileID: 0}
+  velocidade: 2
+  magnitude: 1
+  intensidadeBase: 1

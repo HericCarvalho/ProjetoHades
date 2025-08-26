@@ -2,10 +2,11 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
-public class HUD_Interação : MonoBehaviour
+public class HUD_Interacao : MonoBehaviour
 {
-    public static HUD_Interação instancia;
+    public static HUD_Interacao instancia;
 
     [Header("Mensagens")]
     public GameObject caixaMensagem;
@@ -13,7 +14,7 @@ public class HUD_Interação : MonoBehaviour
     public float tempoMensagem = 2f;
     public float fadeVel = 4f;
 
-    [Header("Notificações de Inventário")]
+    [Header("Notificações")]
     public GameObject caixaNotificacao;
     public TMP_Text textoNotificacao;
     public Image imagemNotificacao;
@@ -28,6 +29,10 @@ public class HUD_Interação : MonoBehaviour
     private Coroutine notificacaoCoroutine;
     private Vector3 posMensagemOriginal;
     private Vector3 posNotificacaoOriginal;
+
+    // ?? Fila de notificações
+    private Queue<(string texto, Sprite imagem)> filaNotificacoes = new Queue<(string, Sprite)>();
+    private bool mostrandoNotificacao = false;
 
     void Awake()
     {
@@ -49,11 +54,10 @@ public class HUD_Interação : MonoBehaviour
         }
     }
 
+    #region Mensagens
     public void MostrarMensagem(string texto)
     {
-        if (mensagemCoroutine != null)
-            StopCoroutine(mensagemCoroutine);
-
+        if (mensagemCoroutine != null) StopCoroutine(mensagemCoroutine);
         mensagemCoroutine = StartCoroutine(MostrarMensagemCoroutine(texto));
     }
 
@@ -64,31 +68,17 @@ public class HUD_Interação : MonoBehaviour
         caixaMensagem.transform.localPosition = posMensagemOriginal;
         caixaMensagem.SetActive(true);
 
-        // Fade in
-        while (cgMensagem.alpha < 1f)
-        {
-            cgMensagem.alpha += Time.deltaTime * fadeVel;
-            yield return null;
-        }
-
-        // Espera
+        while (cgMensagem.alpha < 1f) { cgMensagem.alpha += Time.deltaTime * fadeVel; yield return null; }
         yield return new WaitForSeconds(tempoMensagem);
-
-        // Fade out
-        while (cgMensagem.alpha > 0f)
-        {
-            cgMensagem.alpha -= Time.deltaTime * fadeVel;
-            yield return null;
-        }
-
+        while (cgMensagem.alpha > 0f) { cgMensagem.alpha -= Time.deltaTime * fadeVel; yield return null; }
         caixaMensagem.SetActive(false);
     }
+    #endregion
 
+    #region Notificações
     public void MostrarNotificacao(string texto, Sprite imagem)
     {
-        if (notificacaoCoroutine != null)
-            StopCoroutine(notificacaoCoroutine);
-
+        if (notificacaoCoroutine != null) StopCoroutine(notificacaoCoroutine);
         notificacaoCoroutine = StartCoroutine(MostrarNotificacaoCoroutine(texto, imagem));
     }
 
@@ -96,6 +86,10 @@ public class HUD_Interação : MonoBehaviour
     {
         textoNotificacao.text = texto;
         imagemNotificacao.sprite = imagem;
+
+        // garante que a imagem está ativa
+        if (imagemNotificacao != null) imagemNotificacao.enabled = true;
+
         cgNotificacao.alpha = 0;
         caixaNotificacao.transform.localPosition = posNotificacaoOriginal;
         caixaNotificacao.SetActive(true);
@@ -103,21 +97,17 @@ public class HUD_Interação : MonoBehaviour
         float t = 0f;
         Vector3 basePos = posNotificacaoOriginal;
 
-        // Fade in com leve pulsação
         while (cgNotificacao.alpha < 1f)
         {
             cgNotificacao.alpha += Time.deltaTime * fadeVelNotificacao;
-            // Pulsação leve
             t += Time.deltaTime * pulsacaoVel;
             caixaNotificacao.transform.localScale = Vector3.one * (1 + Mathf.Sin(t) * pulsacaoMagnitude);
             yield return null;
         }
-
         caixaNotificacao.transform.localScale = Vector3.one;
 
         yield return new WaitForSeconds(tempoNotificacao);
 
-        // Fade out com suavização
         t = 0f;
         while (cgNotificacao.alpha > 0f)
         {
@@ -130,4 +120,18 @@ public class HUD_Interação : MonoBehaviour
         caixaNotificacao.transform.localScale = Vector3.one;
         caixaNotificacao.SetActive(false);
     }
+
+    IEnumerator ProcessarFilaNotificacoes()
+    {
+        mostrandoNotificacao = true;
+
+        while (filaNotificacoes.Count > 0)
+        {
+            var notif = filaNotificacoes.Dequeue();
+            yield return StartCoroutine(MostrarNotificacaoCoroutine(notif.texto, notif.imagem));
+        }
+
+        mostrandoNotificacao = false;
+    }
+    #endregion
 }

@@ -449,7 +449,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6755554295289886578}
   - component: {fileID: 6707504676991591803}
-  - component: {fileID: 8125917841333920536}
+  - component: {fileID: 2247868242159934410}
   m_Layer: 5
   m_Name: Slot
   m_TagString: Untagged
@@ -485,7 +485,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8691191461439425092}
   m_CullTransparentMesh: 1
---- !u!114 &8125917841333920536
+--- !u!114 &2247868242159934410
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -494,12 +494,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 8691191461439425092}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c9aeaa0eb48cdcb45a64f830340c924a, type: 3}
+  m_Script: {fileID: 11500000, guid: 6820fc7843f866543a65ec3dc02d9b1c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   iconeItem: {fileID: 8799118437127554361}
-  textoNome: {fileID: 2244669075594426825}
   textoQuantidade: {fileID: 4532301842414143427}
-  botao: {fileID: 2786992659193000483}
-  itemAtual: {fileID: 0}
-  quantidadeAtual: 1
+  textoNome: {fileID: 2244669075594426825}
+  botaoSlot: {fileID: 2786992659193000483}
