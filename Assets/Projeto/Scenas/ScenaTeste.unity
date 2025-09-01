@@ -2660,7 +2660,7 @@ MonoBehaviour:
   velocidadeBob: 1
   intensidadeTremor: 0.005
   audioPassos: {fileID: 0}
-  somPasso: {fileID: 0}
+  somPasso: {fileID: 8300000, guid: 4c369b6cab8b9da4dbbe588eaf5c659e, type: 3}
   MaxEstamina: 20
   RegeneracaoEstamina: 2
   EstaminaGasta: 2
@@ -2939,17 +2939,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90514738ed5b9074fb590ec925b327ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  caixaMensagem: {fileID: 1065008853}
-  textoMensagem: {fileID: 623483582}
-  tempoMensagem: 15
-  fadeVel: 2
-  caixaNotificacao: {fileID: 188702778}
-  textoNotificacao: {fileID: 2044923083}
-  imagemNotificacao: {fileID: 1930488105}
-  tempoNotificacao: 0.1
-  fadeVelNotificacao: 0.5
-  pulsacaoMagnitude: 0.08
-  pulsacaoVel: 0.5
 --- !u!1 &1930488104
 GameObject:
   m_ObjectHideFlags: 0
