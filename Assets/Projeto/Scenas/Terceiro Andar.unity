@@ -1405,6 +1405,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: LABS Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 8577310824127010395, guid: c84646ef5cb9166459d2f2611776a085, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 10.35
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
