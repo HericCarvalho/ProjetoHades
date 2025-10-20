@@ -73,7 +73,7 @@ public class MovimentaçãoPlayer : MonoBehaviour
         SistemaStamina();
         AlturaCamera();
         DetectarInteracao();
-        HeadbobAvancado();
+        //HeadbobAvancado();
     }
 
     #region Headbob
@@ -152,11 +152,11 @@ public class MovimentaçãoPlayer : MonoBehaviour
 
     private void PuloAgachar()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
-        {
-            RB.AddForce(Vector3.up * PuloForca, ForceMode.Impulse);
-            isGrounded = false;
-        }
+        //if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        //{
+        //    RB.AddForce(Vector3.up * PuloForca, ForceMode.Impulse);
+        //    isGrounded = false;
+        //}
 
         if (Input.GetKeyDown(KeyCode.LeftControl))
             isCrouching = !isCrouching;

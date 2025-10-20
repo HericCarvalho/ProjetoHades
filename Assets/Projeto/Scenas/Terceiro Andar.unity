@@ -28701,6 +28701,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1524835783212415117, guid: a3ed23027263364488289cc8cae0cf78, type: 3}
+      propertyPath: "AlturaEmP\xE9"
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1524835783212415117, guid: a3ed23027263364488289cc8cae0cf78, type: 3}
+      propertyPath: AlturaAgachado
+      value: 0.08
+      objectReference: {fileID: 0}
     - target: {fileID: 1924257097190667397, guid: a3ed23027263364488289cc8cae0cf78, type: 3}
       propertyPath: m_Name
       value: Personagem
