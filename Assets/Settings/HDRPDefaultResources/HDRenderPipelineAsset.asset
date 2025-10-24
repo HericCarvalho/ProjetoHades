@@ -61,9 +61,9 @@ MonoBehaviour:
       m_SchemaId:
         m_Id: With3Levels
     supportDecals: 1
-    supportDecalLayers: 0
-    supportSurfaceGradient: 0
-    decalNormalBufferHP: 0
+    supportDecalLayers: 1
+    supportSurfaceGradient: 1
+    decalNormalBufferHP: 1
     supportHighQualityLineRendering: 0
     highQualityLineRenderingMemoryBudget: 128
     msaaSampleCount: 1
@@ -157,7 +157,7 @@ MonoBehaviour:
         m_Values: 000100000002000000040000
         m_SchemaId:
           m_Id: With3Levels
-      perChannelMask: 0
+      perChannelMask: 1
     postProcessSettings:
       m_LutSize: 32
       lutFormat: 48
