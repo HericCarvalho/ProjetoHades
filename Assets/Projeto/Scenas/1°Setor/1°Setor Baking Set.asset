@@ -73,11 +73,11 @@ MonoBehaviour:
   globalBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0, y: 0, z: 0}
-  bakedSimplificationLevels: -1
-  bakedMinDistanceBetweenProbes: -1
+  bakedSimplificationLevels: 3
+  bakedMinDistanceBetweenProbes: 1
   bakedProbeOcclusion: 0
-  bakedSkyOcclusionValue: -1
-  bakedSkyShadingDirectionValue: -1
+  bakedSkyOcclusionValue: 0
+  bakedSkyShadingDirectionValue: 0
   bakedProbeOffset: {x: 0, y: 0, z: 0}
   bakedMaskCount: 1
   bakedLayerMasks:
@@ -122,7 +122,7 @@ MonoBehaviour:
     m_Keys:
     - 786903774bc73c04dacef3dca596cc69
     m_Values:
-    - hasProbeVolume: 1
+    - hasProbeVolume: 0
       bakeScene: 1
       bounds:
         m_Center: {x: 40.5, y: 0, z: 0}

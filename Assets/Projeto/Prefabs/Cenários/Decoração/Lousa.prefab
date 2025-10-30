@@ -64,6 +64,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Lousa
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 6a3d1d7a29c90a143a2d15564b672902, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -60,9 +60,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8462430526931878405, guid: 5a059799338e2064b8914390cc6de889, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 5a059799338e2064b8914390cc6de889, type: 3}
       propertyPath: m_Name
       value: mesa quebrada
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5a059799338e2064b8914390cc6de889, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: 4612874336308860876, guid: 5a059799338e2064b8914390cc6de889, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

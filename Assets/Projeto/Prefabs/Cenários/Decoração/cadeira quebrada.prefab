@@ -48,9 +48,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -1056775276471651175, guid: 09faee957c8849a4cab6b1cd1d24dd07, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 09faee957c8849a4cab6b1cd1d24dd07, type: 3}
       propertyPath: m_Name
       value: cadeira quebrada
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 09faee957c8849a4cab6b1cd1d24dd07, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: 5324958498806146916, guid: 09faee957c8849a4cab6b1cd1d24dd07, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
