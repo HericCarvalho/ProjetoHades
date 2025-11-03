@@ -62,7 +62,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: e5360e03d0bda6b49b47c77baa0c305e, type: 3}
       propertyPath: m_LODs.Array.data[0].screenRelativeHeight
-      value: 0.3969768
+      value: 0.5573256
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: e5360e03d0bda6b49b47c77baa0c305e, type: 3}
+      propertyPath: m_LODs.Array.data[1].screenRelativeHeight
+      value: 0.07467612
       objectReference: {fileID: 0}
     - target: {fileID: 6811847847584581201, guid: e5360e03d0bda6b49b47c77baa0c305e, type: 3}
       propertyPath: m_StaticEditorFlags
