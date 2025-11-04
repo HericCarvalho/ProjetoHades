@@ -2956,6 +2956,18 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3351647054172832778, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_fontSize
+      value: 33.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3351647054172832778, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3351647054172832778, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     - target: {fileID: 4719497852950287941, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
       propertyPath: m_Color.b
       value: 0.4811321
@@ -3004,6 +3016,50 @@ PrefabInstance:
       propertyPath: playerController
       value: 
       objectReference: {fileID: 1423688035}
+    - target: {fileID: 7927296416685948006, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_Colors.m_NormalColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927296416685948006, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_Colors.m_NormalColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927296416685948006, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_Colors.m_NormalColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927296416685948006, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_Colors.m_NormalColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927296416685948006, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_Colors.m_HighlightedColor.b
+      value: 0.5754717
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927296416685948006, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_Colors.m_HighlightedColor.g
+      value: 0.5754717
+      objectReference: {fileID: 0}
+    - target: {fileID: 7927296416685948006, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_Colors.m_HighlightedColor.r
+      value: 0.5754717
+      objectReference: {fileID: 0}
+    - target: {fileID: 8520984948456845411, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_text
+      value: X
+      objectReference: {fileID: 0}
+    - target: {fileID: 8520984948456845411, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_fontSize
+      value: 33.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8520984948456845411, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8520984948456845411, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     - target: {fileID: 8611481529761043858, guid: f51da323666b9874d8114bfee731c9f5, type: 3}
       propertyPath: m_Name
       value: _CanvasHUD
