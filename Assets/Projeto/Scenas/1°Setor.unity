@@ -21958,8 +21958,8 @@ MonoBehaviour:
     m_Level: 0
   m_DecalLayerMask: -1
   m_ScaleMode: 0
-  m_Offset: {x: -0.009880258, y: 0, z: -0.20621614}
-  m_Size: {x: 1, y: 1, z: 0.87}
+  m_Offset: {x: -0.04940129, y: 0, z: -0.20621614}
+  m_Size: {x: 5, y: 5, z: 0.87}
   m_FadeFactor: 1
   m_Version: 3
 --- !u!4 &553087254
@@ -21971,7 +21971,7 @@ Transform:
   m_GameObject: {fileID: 553087252}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 11.113, y: 1.551, z: -9.353}
+  m_LocalPosition: {x: 1.61, y: 2.328, z: -9.353}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
