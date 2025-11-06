@@ -1,12 +1,5 @@
 fileFormatVersion: 2
-guid: 6d5e33a0ea5994747b844d880d4a36e8
-AssetOrigin:
-  serializedVersion: 1
-  productId: 94347
-  packageName: Decal Pack 1
-  packageVersion: 1.0
-  assetPath: Assets/DecalPack01/Textures/BrickDamageDecal06_HM.png
-  uploadId: 187399
+guid: 88d25f6087310ee44af12026413db8e7
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -70,9 +63,9 @@ TextureImporter:
   compressionQualitySet: 0
   textureFormatSet: 0
   ignorePngGamma: 0
-  applyGammaDecoding: 1
+  applyGammaDecoding: 0
   swizzle: 50462976
-  cookieLightType: 1
+  cookieLightType: 0
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
