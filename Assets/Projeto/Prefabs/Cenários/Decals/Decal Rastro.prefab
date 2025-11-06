@@ -49,8 +49,8 @@ MonoBehaviour:
   m_FadeScale: 0.9
   m_StartAngleFade: 180
   m_EndAngleFade: 180
-  m_UVScale: {x: 1, y: 1}
-  m_UVBias: {x: 0, y: 0}
+  m_UVScale: {x: 0.9796302, y: 1}
+  m_UVBias: {x: 0.020369845, y: 0}
   m_AffectsTransparency: 0
   m_TransparentTextureResolution:
     m_Override: 256
@@ -58,7 +58,7 @@ MonoBehaviour:
     m_Level: 0
   m_DecalLayerMask: 1
   m_ScaleMode: 0
-  m_Offset: {x: 0, y: 0, z: 0}
-  m_Size: {x: 3, y: 3, z: 1}
+  m_Offset: {x: 0.030554771, y: 0, z: -0.10345639}
+  m_Size: {x: 2.9388905, y: 3, z: 0.1}
   m_FadeFactor: 1
   m_Version: 3

@@ -156,7 +156,7 @@ Material:
     - _AORemapMin: 0
     - _ATDistance: 1
     - _AddPrecomputedVelocity: 0
-    - _AffectAO: 0
+    - _AffectAO: 1
     - _AffectAlbedo: 1
     - _AffectEmission: 0
     - _AffectMetal: 0
@@ -178,11 +178,11 @@ Material:
     - _CullMode: 2
     - _CullModeForward: 2
     - _Cutoff: 0.5
-    - _DecalBlend: 0.981
+    - _DecalBlend: 1
     - _DecalColorMask0: 15
     - _DecalColorMask1: 15
-    - _DecalColorMask2: 3
-    - _DecalColorMask3: 0
+    - _DecalColorMask2: 7
+    - _DecalColorMask3: 4
     - _DecalMaskMapBlueScale: 1
     - _DecalMeshBiasType: 0
     - _DecalMeshDepthBias: 0
@@ -247,7 +247,7 @@ Material:
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
     - _RefractionModel: 0
-    - _Smoothness: 0.5
+    - _Smoothness: 0.412
     - _SmoothnessRemapMax: 1
     - _SmoothnessRemapMin: 0
     - _SpecularAAScreenSpaceVariance: 0.1
