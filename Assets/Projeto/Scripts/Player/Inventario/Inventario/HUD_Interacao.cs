@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using UnityEngine.Audio;
 
 public class HUD_Interacao : MonoBehaviour
 {
@@ -23,6 +24,14 @@ public class HUD_Interacao : MonoBehaviour
     public float deslocamentoNotificacao = 30f;
     public float tempoFadeOut = 0.6f;
 
+    [Header("Lanterna / UI")]
+    [SerializeField] private Light lanternaLuz;      
+    [SerializeField] private Button botaoLanterna;   
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip somLanterna;  
+    private bool lanternaLigada = false;
+
+    [Header("Gerais")]
     [SerializeField] private GameObject HUD_Celular;
     [SerializeField] private GameObject HUD_blocodenotas;
     [SerializeField] private MonoBehaviour playerController;
@@ -44,14 +53,17 @@ public class HUD_Interacao : MonoBehaviour
     private void Update()
     {
         AbrirCelular();
-        LigarLanterna();
+
+    }
+    private void Start()
+    {
+
     }
     private void Awake()
     {
         if (instancia == null) instancia = this;
         else { Destroy(gameObject); return; }
 
-        // mensagens
         if (caixaMensagem != null)
         {
             cgMensagem = caixaMensagem.GetComponent<CanvasGroup>();
@@ -61,7 +73,6 @@ public class HUD_Interacao : MonoBehaviour
             caixaMensagem.SetActive(false);
         }
 
-        // notificações
         if (caixaNotificacao != null)
         {
             cgNotificacao = caixaNotificacao.GetComponent<CanvasGroup>();
@@ -70,6 +81,7 @@ public class HUD_Interacao : MonoBehaviour
             cgNotificacao.alpha = 0f;
             caixaNotificacao.SetActive(false);
         }
+        LigarLanterna();
     }
 
     #region Mensagens simples
@@ -190,8 +202,12 @@ public class HUD_Interacao : MonoBehaviour
 
     public void PegarCelular()
     {
+        if (temCelular) return;
+
         temCelular = true;
-        Debug.Log("Celular adicionado ao inventário! Agora você pode abrir o HUD.");
+
+        if (botaoLanterna != null)
+            botaoLanterna.interactable = true;
     }
     private void AbrirCelular()
     {
@@ -234,10 +250,27 @@ public class HUD_Interacao : MonoBehaviour
         }
     }
 
-    private void LigarLanterna()
+    public void LigarLanterna()
     {
+        if (!temCelular) return;
 
+        if (lanternaLuz == null)
+        {
+            Debug.LogWarning("[HUD] lanternaLuz não atribuída!");
+            return;
+        }
+
+        lanternaLigada = !lanternaLigada;
+        lanternaLuz.enabled = lanternaLigada;
+
+        MostrarNotificacao(lanternaLigada ? "Lanterna ligada" : "Lanterna desligada", null);
+
+        if (audioSource != null && somLanterna != null)
+        {
+            audioSource.PlayOneShot(somLanterna);
+        }
     }
+
 
     public void AbrirBlocodeNotas()
     {
