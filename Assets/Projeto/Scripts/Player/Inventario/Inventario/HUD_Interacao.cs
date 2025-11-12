@@ -31,6 +31,23 @@ public class HUD_Interacao : MonoBehaviour
     [SerializeField] private AudioClip somLanterna;  
     private bool lanternaLigada = false;
 
+    [Header("HUD do Diário")]
+    public GameObject painelDiario;        // painel do diário (Canvas) — ativado com Q
+    public TMP_Text textoPaginaUI;         // campo de texto para o conteúdo
+    public Image imagemPaginaUI;           // imagem opcional para a página
+    public TMP_Text indicadorPaginaUI;     // "Página X / N"
+    public Button botaoAnterior;
+    public Button botaoProximo;
+
+    [Header("Config Do Diario")]
+    public int totalPages = 20;
+    public KeyCode teclaAbrir = KeyCode.Q;
+
+    [Header("Áudio Do Diario")]
+    public AudioSource audioSourceDiario;
+    public AudioClip somColetaPagina;
+    public AudioClip somFolhear;
+
     [Header("Gerais")]
     [SerializeField] private GameObject HUD_Celular;
     [SerializeField] private GameObject HUD_blocodenotas;
@@ -42,12 +59,17 @@ public class HUD_Interacao : MonoBehaviour
 
     [SerializeField] private bool temCelular = false;
 
+    private bool desbloqueado = false;
+    private int paginaAtual = 1;
+
     private CanvasGroup cgMensagem;
     private CanvasGroup cgNotificacao;
     private Vector3 posMensagemOriginal;
     private Vector3 posNotificacaoOriginal;
 
     private readonly Queue<(string texto, Sprite imagem)> filaNotificacoes = new Queue<(string, Sprite)>();
+    private readonly Dictionary<int, PageItem> paginasColetadas = new Dictionary<int, PageItem>();
+
     private Coroutine processadorFila;
 
     private void Update()
@@ -61,6 +83,8 @@ public class HUD_Interacao : MonoBehaviour
     }
     private void Awake()
     {
+        LigarLanterna();
+
         if (instancia == null) instancia = this;
         else { Destroy(gameObject); return; }
 
@@ -81,7 +105,15 @@ public class HUD_Interacao : MonoBehaviour
             cgNotificacao.alpha = 0f;
             caixaNotificacao.SetActive(false);
         }
-        LigarLanterna();
+
+        if (instancia == null) instancia = this;
+        else { Destroy(gameObject); return; }
+
+        if (painelDiario != null) painelDiario.SetActive(false);
+
+        if (botaoAnterior != null) botaoAnterior.onClick.AddListener(() => IrParaPagina(paginaAtual - 1));
+        if (botaoProximo != null) botaoProximo.onClick.AddListener(() => IrParaPagina(paginaAtual + 1));
+
     }
 
     #region Mensagens simples
@@ -294,7 +326,105 @@ public class HUD_Interacao : MonoBehaviour
 
     #endregion
 
-    private void StopCoroutineSafe(string coroName)
+    #region FunçõesDiario
+
+    public void AbrirFecharDiario()
+    {
+        if (painelDiario == null) return;
+        bool novo = !painelDiario.activeSelf;
+        painelDiario.SetActive(novo);
+
+        if (novo)
+            AtualizarPaginaUI();
+    }
+
+    public void PegarDiario()
+    {
+        if (desbloqueado) return;
+
+        desbloqueado = true;
+        paginaAtual = 1;
+
+        if (painelDiario != null) painelDiario.SetActive(false);
+
+        var itens = SistemaInventario.instancia?.GetItens();
+        if (itens != null)
+        {
+            foreach (var e in itens)
+            {
+                if (e.item is PageItem p)
+                {
+                    // integra sem sobrescrever se já existir
+                    if (!paginasColetadas.ContainsKey(p.numeroPagina))
+                        paginasColetadas[p.numeroPagina] = p;
+                }
+            }
+        }
+
+        AtualizarPaginaUI();
+
+        HUD_Interacao.instancia?.MostrarNotificacao("Diário coletado! Pressione Q para abrir.", null);
+    }
+
+    public void IntegrarPagina(PageItem page)
+    {
+        if (page == null) return;
+
+        // substitui/insere a página coletada
+        paginasColetadas[page.numeroPagina] = page;
+
+        // som de coleta
+        if (audioSource != null && somColetaPagina != null)
+            audioSource.PlayOneShot(somColetaPagina);
+
+        // atualizar se diário aberto
+        AtualizarPaginaUI();
+    }
+
+    public void IrParaPagina(int numero)
+    {
+        if (numero < 1) numero = 1;
+        if (numero > totalPages) numero = totalPages;
+        paginaAtual = numero;
+
+        if (audioSource != null && somFolhear != null)
+            audioSource.PlayOneShot(somFolhear);
+
+        AtualizarPaginaUI();
+    }
+
+    private void AtualizarPaginaUI()
+    {
+        if (painelDiario == null) return;
+
+        if (indicadorPaginaUI != null)
+            indicadorPaginaUI.text = $"Página {paginaAtual} / {totalPages}";
+
+        if (paginasColetadas.TryGetValue(paginaAtual, out PageItem page))
+        {
+            if (textoPaginaUI != null) textoPaginaUI.text = string.IsNullOrEmpty(page.textoPagina) ? "<Página vazia>" : page.textoPagina;
+            if (imagemPaginaUI != null)
+            {
+                imagemPaginaUI.sprite = page.imagemPagina;
+                imagemPaginaUI.enabled = page.imagemPagina != null;
+            }
+        }
+        else
+        {
+            if (textoPaginaUI != null) textoPaginaUI.text = "<Página não coletada>";
+            if (imagemPaginaUI != null)
+            {
+                imagemPaginaUI.sprite = null;
+                imagemPaginaUI.enabled = false;
+            }
+        }
+    }
+    public bool TemPagina(int numero) => paginasColetadas.ContainsKey(numero);
+
+#endregion
+
+
+private void StopCoroutineSafe(string coroName)
     {
         try { StopCoroutine(coroName); } catch { }
     }

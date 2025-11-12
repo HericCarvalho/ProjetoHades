@@ -24,6 +24,11 @@ public class InteracaoManager : MonoBehaviour
     [Header("Desbloqueio Celular")]
     public string tagCelular = "Celular";
 
+    [Header("Diário / Pickup")]
+    public string tagDiary = "Diary";
+    public string nomeItemDiary = "Diario";
+    public ItemSistema diaryItem;
+
     private GameObject popupInstance;
     private TMP_Text popupTexto;
     private Image popupIcone;
@@ -62,7 +67,6 @@ public class InteracaoManager : MonoBehaviour
         if (objetoInterativo == null) return;
 
         bool ehCelular = false;
-
         if (!string.IsNullOrEmpty(tagCelular) && objetoInterativo.gameObject.CompareTag(tagCelular))
             ehCelular = true;
 
@@ -71,8 +75,25 @@ public class InteracaoManager : MonoBehaviour
             MovimentaçãoPlayer jogador = jogadorCamera.GetComponent<MovimentaçãoPlayer>();
             InteragirComCelular(objetoInterativo, jogador, true);
         }
+
+        bool ehDiary = false;
+
+        if (!string.IsNullOrEmpty(tagDiary) && objetoInterativo.gameObject.CompareTag(tagDiary))
+            ehDiary = true;
+        else if (!ehDiary && !string.IsNullOrEmpty(nomeItemDiary) && objetoInterativo.itemColetavel != null)
+        {
+            if (objetoInterativo.itemColetavel.nomeItem == nomeItemDiary)
+                ehDiary = true;
+        }
+
         objetoInterativo.Interagir(jogadorCamera.GetComponent<MovimentaçãoPlayer>());
 
+        if (ehDiary)
+        {
+            TratarInteracaoDiary(objetoInterativo);
+        }
+
+        RemoverPopup();
     }
 
     private void InteragirComCelular(ItemInterativo item, MovimentaçãoPlayer jogador, bool abrirImediatamente = true)
@@ -83,6 +104,35 @@ public class InteracaoManager : MonoBehaviour
         HUD_Interacao.instancia?.MostrarMensagem($"Você conseguiu um celular! Use-o a Lanterna dele para iluminar e o bloco de notas para anotar seu proximo passo.");
     }
 
+    #region InteraçãoDiario
+
+    private void TratarInteracaoDiary(ItemInterativo item)
+    {
+        if (item == null) return;
+
+        if (diaryItem != null)
+        {
+            SistemaInventario.instancia?.AdicionarItem(diaryItem, 1);
+        }
+
+        HUD_Interacao.instancia?.PegarDiario();
+
+        HUD_Interacao.instancia?.MostrarMensagem("Você coletou o diário.");
+        HUD_Interacao.instancia?.MostrarNotificacao("Diário coletado!", diaryItem != null ? diaryItem.iconeItem : null);
+
+        try
+        {
+            if (item != null && item.gameObject != null)
+            {
+                Destroy(item.gameObject);
+            }
+        }
+        catch { /* defensivo */ }
+    }
+
+    #endregion
+
+    #region PopUp
     void CriarPopup(ItemInterativo item, Renderer rend)
     {
         mostrandoPopup = true;
@@ -123,6 +173,8 @@ public class InteracaoManager : MonoBehaviour
         popupInstance.transform.LookAt(jogadorCamera);
         popupInstance.transform.Rotate(0, 180f, 0);
     }
+
+    #endregion
 
     void PulsarContorno()
     {
