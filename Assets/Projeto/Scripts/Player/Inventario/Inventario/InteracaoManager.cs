@@ -21,6 +21,9 @@ public class InteracaoManager : MonoBehaviour
     public float pulsacaoMagnitude = 0.05f;
     public float pulsacaoVel = 3f;
 
+    [Header("Desbloqueio Celular")]
+    public string tagCelular = "Celular";
+
     private GameObject popupInstance;
     private TMP_Text popupTexto;
     private Image popupIcone;
@@ -56,11 +59,28 @@ public class InteracaoManager : MonoBehaviour
 
     void Interagir()
     {
-        if (objetoInterativo != null)
+        if (objetoInterativo == null) return;
+
+        bool ehCelular = false;
+
+        if (!string.IsNullOrEmpty(tagCelular) && objetoInterativo.gameObject.CompareTag(tagCelular))
+            ehCelular = true;
+
+        if (ehCelular)
         {
-            objetoInterativo.Interagir(jogadorCamera.GetComponent<MovimentaçãoPlayer>());
-            RemoverPopup();
+            MovimentaçãoPlayer jogador = jogadorCamera.GetComponent<MovimentaçãoPlayer>();
+            InteragirComCelular(objetoInterativo, jogador, true);
         }
+        objetoInterativo.Interagir(jogadorCamera.GetComponent<MovimentaçãoPlayer>());
+
+    }
+
+    private void InteragirComCelular(ItemInterativo item, MovimentaçãoPlayer jogador, bool abrirImediatamente = true)
+    {
+        if (item == null) return;
+
+        HUD_Interacao.instancia?.PegarCelular();
+        HUD_Interacao.instancia?.MostrarMensagem($"Você conseguiu um celular! Use-o a Lanterna dele para iluminar e o bloco de notas para anotar seu proximo passo.");
     }
 
     void CriarPopup(ItemInterativo item, Renderer rend)

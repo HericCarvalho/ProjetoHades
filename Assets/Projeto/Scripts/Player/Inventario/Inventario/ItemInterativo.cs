@@ -3,12 +3,13 @@ using UnityEngine.Events;
 
 public class ItemInterativo : MonoBehaviour
 {
-    // use o enum certo:
     public TipoItem tipo = TipoItem.Interativo;
 
     [TextArea] public string descricao;
 
-    // use o ScriptableObject novo
+    [Header("Áudio")]
+    public AudioClip somColeta;
+
     public ItemSistema itemColetavel;
 
     public UnityEvent onInteragir;
@@ -25,6 +26,7 @@ public class ItemInterativo : MonoBehaviour
                 if (itemColetavel != null)
                 {
                     SistemaInventario.instancia?.AdicionarItem(itemColetavel);
+                    AudioSource.PlayClipAtPoint(somColeta, transform.position);
                     Destroy(gameObject);
                 }
                 break;

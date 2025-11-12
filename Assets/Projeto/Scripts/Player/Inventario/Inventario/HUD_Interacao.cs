@@ -31,6 +31,8 @@ public class HUD_Interacao : MonoBehaviour
     private bool HUDativa = false;
     private bool bloqueadoPorHUD = false;
 
+    [SerializeField] private bool temCelular = false;
+
     private CanvasGroup cgMensagem;
     private CanvasGroup cgNotificacao;
     private Vector3 posMensagemOriginal;
@@ -186,9 +188,14 @@ public class HUD_Interacao : MonoBehaviour
 
     #region FunçõesCelular
 
+    public void PegarCelular()
+    {
+        temCelular = true;
+        Debug.Log("Celular adicionado ao inventário! Agora você pode abrir o HUD.");
+    }
     private void AbrirCelular()
     {
-        if (Input.GetKeyDown(KeyCode.F))
+        if (temCelular && Input.GetKeyDown(KeyCode.F))
         {
             HUDativa = !HUDativa;
 
