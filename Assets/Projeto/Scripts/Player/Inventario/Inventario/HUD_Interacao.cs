@@ -15,7 +15,7 @@ public class HUD_Interacao : MonoBehaviour
     public float tempoMensagem = 2f;
     public float fadeVel = 4f;
 
-    [Header("Notifica��es (fila)")]
+    [Header("Notificacoes (fila)")]
     public GameObject caixaNotificacao;
     public TMP_Text textoNotificacao;
     public Image imagemNotificacao;
@@ -27,15 +27,15 @@ public class HUD_Interacao : MonoBehaviour
     [Header("Lanterna / UI")]
     [SerializeField] private Light lanternaLuz;
     [SerializeField] private Button botaoLanterna;
-    [SerializeField] private AudioSource audioSource;     // SFX gerais (lanterna, etc.)
+    [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip somLanterna;
     private bool lanternaLigada = false;
 
-    [Header("HUD do Di�rio")]
-    public GameObject painelDiario;        // painel do di�rio (Canvas) � ativado com Q
-    public TMP_Text textoPaginaUI;         // campo de texto para o conte�do
-    public Image imagemPaginaUI;           // imagem opcional para a p�gina
-    public TMP_Text indicadorPaginaUI;     // "P�gina X / N"
+    [Header("HUD do Diario")]
+    public GameObject painelDiario;   
+    public TMP_Text textoPaginaUI;    
+    public Image imagemPaginaUI;      
+    public TMP_Text indicadorPaginaUI;
     public Button botaoAnterior;
     public Button botaoProximo;
 
@@ -43,14 +43,25 @@ public class HUD_Interacao : MonoBehaviour
     public int totalPages = 20;
     public KeyCode teclaAbrir = KeyCode.Q;
 
-    [Header("�udio Do Diario")]
-    [SerializeField] private AudioSource audioSourceDiario; // �udio espec�fico do di�rio
+    [Header("audio Do Diario")]
+    [SerializeField] private AudioSource audioSourceDiario;
     [SerializeField] private AudioClip somColetaPagina;
     [SerializeField] private AudioClip somFolhear;
 
-    [Header("Anima��o de folheado")]
+    [Header("Animacao de folheado")]
     public float duracaoFolheado = 0.28f;
     public AnimationCurve curvaFolheado = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    [Header("Capa do Diário")]
+    public Canvas capaCanvas;             
+    public TMP_Text capaTexto;            
+    public string Titulo = "Diário de Sobrevivencia";
+    public float duracaoCapa = 0.8f;  
+    public float fadeInCapa = 0.12f;
+    public float fadeOutCapa = 0.18f;
+    public float scalePunch = 0.06f;
+    public GameObject conteudoPaginas;
+    public AudioClip somAbrirCapa;    
 
     [Header("Gerais")]
     [SerializeField] private GameObject HUD_Celular;
@@ -69,6 +80,9 @@ public class HUD_Interacao : MonoBehaviour
     private bool isAnimating = false;
     private RectTransform conteudoRect;
 
+    private CanvasGroup cgCapa;
+    private Coroutine capaCoroutine;
+
     private CanvasGroup cgMensagem;
     private CanvasGroup cgNotificacao;
     private Vector3 posMensagemOriginal;
@@ -79,7 +93,6 @@ public class HUD_Interacao : MonoBehaviour
 
     private Coroutine processadorFila;
 
-    // --- Awake limpo: instancia � definida primeiro, depois inicializamos tudo ---
     private void Awake()
     {
         if (instancia == null)
@@ -168,9 +181,39 @@ public class HUD_Interacao : MonoBehaviour
         if (conteudoRect == null && imagemPaginaUI != null)
             conteudoRect = imagemPaginaUI.GetComponentInParent<RectTransform>();
 
-        // fallback para o painel
         if (conteudoRect == null && painelDiario != null)
             conteudoRect = painelDiario.GetComponent<RectTransform>();
+
+        if (capaCanvas != null)
+        {
+            cgCapa = capaCanvas.GetComponent<CanvasGroup>();
+            if (cgCapa == null) cgCapa = capaCanvas.gameObject.AddComponent<CanvasGroup>();
+            capaCanvas.gameObject.SetActive(false);
+            cgCapa.alpha = 0f;
+
+            // define texto padrão se existir TMP
+            if (capaTexto != null && !string.IsNullOrEmpty(Titulo))
+                capaTexto.text = Titulo;
+        }
+
+        if (conteudoPaginas == null)
+        {
+            if (textoPaginaUI != null)
+                conteudoPaginas = textoPaginaUI.transform.parent?.gameObject;
+
+            if (conteudoPaginas == null && painelDiario != null)
+            {
+                foreach (Transform t in painelDiario.transform)
+                {
+                    string n = t.name.ToLower();
+                    if (n.Contains("content") || n.Contains("conteudo") || n.Contains("pages") || n.Contains("pagina"))
+                    {
+                        conteudoPaginas = t.gameObject;
+                        break;
+                    }
+                }
+            }
+        }
     }
     #endregion
 
@@ -293,7 +336,6 @@ public class HUD_Interacao : MonoBehaviour
         if (botaoLanterna != null)
             botaoLanterna.interactable = true;
     }
-
     private void AbrirCelular()
     {
         if (temCelular && Input.GetKeyDown(KeyCode.F))
@@ -309,7 +351,6 @@ public class HUD_Interacao : MonoBehaviour
             BloqueioAoAbrirCelularDiario(HUDativa);
         }
     }
-
     private void BloqueioAoAbrirCelularDiario (bool bloquear)
     {
         bloqueadoPorHUD = bloquear;
@@ -342,8 +383,6 @@ public class HUD_Interacao : MonoBehaviour
             Cursor.visible = false;
         }
     }
-
-
     public void LigarLanterna()
     {
         if (!temCelular) return;
@@ -364,7 +403,6 @@ public class HUD_Interacao : MonoBehaviour
             audioSource.PlayOneShot(somLanterna);
         }
     }
-
     public void AbrirBlocodeNotas()
     {
         if (HUD_blocodenotas == null || HUD_Celular == null) return;
@@ -375,7 +413,6 @@ public class HUD_Interacao : MonoBehaviour
 
         BloqueioAoAbrirCelularDiario(true);
     }
-
     public void FecharBlocodeNotas()
     {
         if (HUD_blocodenotas == null) return;
@@ -398,10 +435,29 @@ public class HUD_Interacao : MonoBehaviour
 
         if (novo)
         {
-            AtualizarPaginaUI(immediate: true);
-
             if (HUD_Celular != null && HUD_Celular.activeSelf)
                 HUD_Celular.SetActive(false);
+
+            // se temos capa configurada, inicia animação; caso contrário, mostra imediatamente as paginas
+            if (capaCanvas != null && capaTexto != null)
+            {
+                // atualiza o texto da capa (se quiser definir dinamicamente antes)
+                if (string.IsNullOrEmpty(capaTexto.text)) capaTexto.text = Titulo;
+
+                // começa coroutine de capa (ela chamará AtualizarPaginaUI no final)
+                if (capaCoroutine != null) StopCoroutine(capaCoroutine);
+                capaCoroutine = StartCoroutine(AparicaoCapa());
+            }
+            else
+            {
+                AtualizarPaginaUI(immediate: true);
+            }
+        }
+        else
+        {
+            // fechar: cancela qualquer animação de capa em andamento
+            if (capaCoroutine != null) { StopCoroutine(capaCoroutine); capaCoroutine = null; }
+            if (capaCanvas != null) { capaCanvas.gameObject.SetActive(false); if (cgCapa != null) cgCapa.alpha = 0f; }
         }
 
         BloqueioAoAbrirCelularDiario(novo);
@@ -631,6 +687,101 @@ public class HUD_Interacao : MonoBehaviour
         InteracoesBotoes(true);
         isAnimating = false;
     }
+    private IEnumerator AparicaoCapa()
+    {
+        if (capaCanvas == null || capaTexto == null || cgCapa == null)
+        {
+            AtualizarPaginaUI(immediate: true);
+            yield break;
+        }
+
+        // bloqueia inputs durante animação
+        isAnimating = true;
+        InteracoesBotoes(false);
+
+        // === ESCONDE o conteúdo das páginas para evitar bleed-through ===
+        bool conteudoAtivoOriginal = true;
+        if (conteudoPaginas != null)
+        {
+            conteudoAtivoOriginal = conteudoPaginas.activeSelf;
+            conteudoPaginas.SetActive(false);
+        }
+        else
+        {
+            // fallback: desativa elementos individuais se não houver container
+            if (textoPaginaUI != null) textoPaginaUI.gameObject.SetActive(false);
+            if (imagemPaginaUI != null) imagemPaginaUI.gameObject.SetActive(false);
+            if (indicadorPaginaUI != null) indicadorPaginaUI.gameObject.SetActive(false);
+            if (botaoAnterior != null) botaoAnterior.gameObject.SetActive(false);
+            if (botaoProximo != null) botaoProximo.gameObject.SetActive(false);
+        }
+
+        // ativa e configura capa
+        capaCanvas.gameObject.SetActive(true);
+        cgCapa.alpha = 0f;
+        Vector3 originalScale = capaCanvas.transform.localScale;
+        capaCanvas.transform.localScale = originalScale * (1f - scalePunch);
+
+        // toca som de capa (opcional)
+        if (audioSource != null && somAbrirCapa != null)
+            audioSource.PlayOneShot(somAbrirCapa);
+
+        // fade-in + leve scale up (pop)
+        float t = 0f;
+        while (t < fadeInCapa)
+        {
+            t += Time.unscaledDeltaTime;
+            float alpha = Mathf.Clamp01(t / Mathf.Max(0.0001f, fadeInCapa));
+            cgCapa.alpha = alpha;
+            float s = Mathf.Lerp(1f - scalePunch, 1f + scalePunch * 0.2f, alpha);
+            capaCanvas.transform.localScale = originalScale * s;
+            yield return null;
+        }
+        cgCapa.alpha = 1f;
+        capaCanvas.transform.localScale = originalScale;
+
+        // hold
+        float hold = Mathf.Max(0f, duracaoCapa - fadeInCapa - fadeOutCapa);
+        if (hold > 0f) yield return new WaitForSecondsRealtime(hold);
+
+        // fade-out
+        t = 0f;
+        while (t < fadeOutCapa)
+        {
+            t += Time.unscaledDeltaTime;
+            float a = Mathf.Clamp01(1f - (t / Mathf.Max(0.0001f, fadeOutCapa)));
+            cgCapa.alpha = a;
+            float s = Mathf.Lerp(1f, 1f - scalePunch * 0.2f, 1f - a);
+            capaCanvas.transform.localScale = originalScale * s;
+            yield return null;
+        }
+
+        cgCapa.alpha = 0f;
+        capaCanvas.gameObject.SetActive(false);
+
+        // === ATIVA o conteúdo das páginas agora que a capa saiu ===
+        if (conteudoPaginas != null)
+        {
+            conteudoPaginas.SetActive(true);
+        }
+        else
+        {
+            // fallback: reativa elementos individuais
+            if (textoPaginaUI != null) textoPaginaUI.gameObject.SetActive(true);
+            if (imagemPaginaUI != null) imagemPaginaUI.gameObject.SetActive(true);
+            if (indicadorPaginaUI != null) indicadorPaginaUI.gameObject.SetActive(true);
+            if (botaoAnterior != null) botaoAnterior.gameObject.SetActive(true);
+            if (botaoProximo != null) botaoProximo.gameObject.SetActive(true);
+        }
+
+        // mostra o conteúdo do diário (as páginas)
+        AtualizarPaginaUI(immediate: true);
+
+        // libera inputs
+        InteracoesBotoes(true);
+        isAnimating = false;
+        capaCoroutine = null;
+    }
     private void InteracoesBotoes(bool valor)
     {
         if (botaoAnterior != null) botaoAnterior.interactable = valor;
@@ -645,6 +796,7 @@ public class HUD_Interacao : MonoBehaviour
         if (instancia == this)
             instancia = null;
     }
+
 
     private void StopCoroutineSafe(string coroName)
     {
