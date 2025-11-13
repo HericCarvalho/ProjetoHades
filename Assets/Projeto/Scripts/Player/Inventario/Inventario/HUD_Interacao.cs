@@ -15,7 +15,7 @@ public class HUD_Interacao : MonoBehaviour
     public float tempoMensagem = 2f;
     public float fadeVel = 4f;
 
-    [Header("Notificações (fila)")]
+    [Header("Notificaï¿½ï¿½es (fila)")]
     public GameObject caixaNotificacao;
     public TMP_Text textoNotificacao;
     public Image imagemNotificacao;
@@ -25,17 +25,17 @@ public class HUD_Interacao : MonoBehaviour
     public float tempoFadeOut = 0.6f;
 
     [Header("Lanterna / UI")]
-    [SerializeField] private Light lanternaLuz;      
-    [SerializeField] private Button botaoLanterna;   
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip somLanterna;  
+    [SerializeField] private Light lanternaLuz;
+    [SerializeField] private Button botaoLanterna;
+    [SerializeField] private AudioSource audioSource;     // SFX gerais (lanterna, etc.)
+    [SerializeField] private AudioClip somLanterna;
     private bool lanternaLigada = false;
 
-    [Header("HUD do Diário")]
-    public GameObject painelDiario;        // painel do diário (Canvas) — ativado com Q
-    public TMP_Text textoPaginaUI;         // campo de texto para o conteúdo
-    public Image imagemPaginaUI;           // imagem opcional para a página
-    public TMP_Text indicadorPaginaUI;     // "Página X / N"
+    [Header("HUD do Diï¿½rio")]
+    public GameObject painelDiario;        // painel do diï¿½rio (Canvas) ï¿½ ativado com Q
+    public TMP_Text textoPaginaUI;         // campo de texto para o conteï¿½do
+    public Image imagemPaginaUI;           // imagem opcional para a pï¿½gina
+    public TMP_Text indicadorPaginaUI;     // "Pï¿½gina X / N"
     public Button botaoAnterior;
     public Button botaoProximo;
 
@@ -43,24 +43,31 @@ public class HUD_Interacao : MonoBehaviour
     public int totalPages = 20;
     public KeyCode teclaAbrir = KeyCode.Q;
 
-    [Header("Áudio Do Diario")]
-    public AudioSource audioSourceDiario;
-    public AudioClip somColetaPagina;
-    public AudioClip somFolhear;
+    [Header("ï¿½udio Do Diario")]
+    [SerializeField] private AudioSource audioSourceDiario; // ï¿½udio especï¿½fico do diï¿½rio
+    [SerializeField] private AudioClip somColetaPagina;
+    [SerializeField] private AudioClip somFolhear;
+
+    [Header("Animaï¿½ï¿½o de folheado")]
+    public float duracaoFolheado = 0.28f;
+    public AnimationCurve curvaFolheado = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     [Header("Gerais")]
     [SerializeField] private GameObject HUD_Celular;
     [SerializeField] private GameObject HUD_blocodenotas;
     [SerializeField] private MonoBehaviour playerController;
-    [SerializeField] private Rigidbody playerRigidbody; 
-    
+    [SerializeField] private Rigidbody playerRigidbody;
+
     private bool HUDativa = false;
     private bool bloqueadoPorHUD = false;
 
     [SerializeField] private bool temCelular = false;
 
+    // Diï¿½rio
     private bool desbloqueado = false;
     private int paginaAtual = 1;
+    private bool isAnimating = false;
+    private RectTransform conteudoRect;
 
     private CanvasGroup cgMensagem;
     private CanvasGroup cgNotificacao;
@@ -72,22 +79,34 @@ public class HUD_Interacao : MonoBehaviour
 
     private Coroutine processadorFila;
 
-    private void Update()
-    {
-        AbrirCelular();
-
-    }
-    private void Start()
-    {
-
-    }
+    // --- Awake limpo: instancia ï¿½ definida primeiro, depois inicializamos tudo ---
     private void Awake()
     {
-        LigarLanterna();
+        if (instancia == null)
+        {
+            instancia = this;
+            Debug.Log("[HUD_Interacao] instÃ¢ncia criada.");
+        }
+        else
+        {
+            Debug.Log("[HUD_Interacao] outra instÃ¢ncia encontrada â€” destruindo este objeto.");
+            Destroy(gameObject);
+            return;
+        }
 
-        if (instancia == null) instancia = this;
-        else { Destroy(gameObject); return; }
+        InicializarMensagensENotificacoes();
+        InicializarLanternaUI();
+        InicializarDiario();
+    }
 
+    private void Start()
+    {
+        // Start pode ficar vazio ou usar para validar referencias
+    }
+
+    #region Inicializadores
+    private void InicializarMensagensENotificacoes()
+    {
         if (caixaMensagem != null)
         {
             cgMensagem = caixaMensagem.GetComponent<CanvasGroup>();
@@ -105,15 +124,60 @@ public class HUD_Interacao : MonoBehaviour
             cgNotificacao.alpha = 0f;
             caixaNotificacao.SetActive(false);
         }
+    }
 
-        if (instancia == null) instancia = this;
-        else { Destroy(gameObject); return; }
+    private void InicializarLanternaUI()
+    {
+        // nï¿½o ligar a lanterna automaticamente em Awake
+        // configuramos o botï¿½o e o estado inicial
+        if (botaoLanterna != null)
+        {
+            botaoLanterna.onClick.RemoveAllListeners();
+            botaoLanterna.onClick.AddListener(LigarLanterna);
+            botaoLanterna.interactable = temCelular;
+        }
 
-        if (painelDiario != null) painelDiario.SetActive(false);
+        // proteï¿½ï¿½o: configura audioSource para nï¿½o estar em loop
+        if (audioSource != null)
+        {
+            audioSource.loop = false;
+            audioSource.playOnAwake = false;
+        }
+    }
 
-        if (botaoAnterior != null) botaoAnterior.onClick.AddListener(() => IrParaPagina(paginaAtual - 1));
-        if (botaoProximo != null) botaoProximo.onClick.AddListener(() => IrParaPagina(paginaAtual + 1));
+    private void InicializarDiario()
+    {
+        if (painelDiario != null)
+            painelDiario.SetActive(false);
 
+        if (botaoAnterior != null)
+        {
+            botaoAnterior.onClick.RemoveAllListeners();
+            botaoAnterior.onClick.AddListener(() => PreviousPage());
+        }
+
+        if (botaoProximo != null)
+        {
+            botaoProximo.onClick.RemoveAllListeners();
+            botaoProximo.onClick.AddListener(() => NextPage());
+        }
+
+        if (textoPaginaUI != null)
+            conteudoRect = textoPaginaUI.GetComponentInParent<RectTransform>();
+
+        if (conteudoRect == null && imagemPaginaUI != null)
+            conteudoRect = imagemPaginaUI.GetComponentInParent<RectTransform>();
+
+        // fallback para o painel
+        if (conteudoRect == null && painelDiario != null)
+            conteudoRect = painelDiario.GetComponent<RectTransform>();
+    }
+    #endregion
+
+    private void Update()
+    {
+        AbrirCelular();
+        VerificarEntradaDiario();
     }
 
     #region Mensagens simples
@@ -131,17 +195,14 @@ public class HUD_Interacao : MonoBehaviour
         cgMensagem.alpha = 0f;
         caixaMensagem.transform.localPosition = posMensagemOriginal;
 
-        // fade in (unscaled)
         while (cgMensagem.alpha < 1f)
         {
             cgMensagem.alpha = Mathf.Min(1f, cgMensagem.alpha + Time.unscaledDeltaTime * fadeVel);
             yield return null;
         }
 
-        // espera o tempo de exibição (unscaled)
         yield return new WaitForSecondsRealtime(tempoMensagem);
 
-        // fade out
         while (cgMensagem.alpha > 0f)
         {
             cgMensagem.alpha = Mathf.Max(0f, cgMensagem.alpha - Time.unscaledDeltaTime * fadeVel);
@@ -152,7 +213,7 @@ public class HUD_Interacao : MonoBehaviour
     }
     #endregion
 
-    #region Notificações com subida suave e fade-out
+    #region Notificaï¿½ï¿½es com subida suave e fade-out
     public void MostrarNotificacao(string texto, Sprite imagem)
     {
         if (string.IsNullOrEmpty(texto) && imagem == null) return;
@@ -174,7 +235,6 @@ public class HUD_Interacao : MonoBehaviour
         {
             var (texto, imagem) = filaNotificacoes.Dequeue();
 
-            // prepara o visual
             textoNotificacao.text = texto ?? "";
             if (imagemNotificacao != null)
             {
@@ -182,22 +242,18 @@ public class HUD_Interacao : MonoBehaviour
                 imagemNotificacao.enabled = imagem != null;
             }
 
-            // coloca na posição original e zera alpha
             caixaNotificacao.transform.localPosition = posNotificacaoOriginal;
             caixaNotificacao.SetActive(true);
             cgNotificacao.alpha = 0f;
 
-            // FADE IN
             while (cgNotificacao.alpha < 1f)
             {
                 cgNotificacao.alpha = Mathf.Min(1f, cgNotificacao.alpha + Time.unscaledDeltaTime * fadeVelNotificacao);
                 yield return null;
             }
 
-            // Mantém totalmente visível por 'tempoNotificacao' (unscaled)
             yield return new WaitForSecondsRealtime(tempoNotificacao);
 
-            // FADE OUT + SUBIDA: interpolamos alpha 1->0 enquanto subimos de posNotificacaoOriginal
             float elapsed = 0f;
             Vector3 startPos = posNotificacaoOriginal;
             Vector3 endPos = posNotificacaoOriginal + Vector3.up * deslocamentoNotificacao;
@@ -207,22 +263,18 @@ public class HUD_Interacao : MonoBehaviour
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / tempoFadeOut);
 
-                // alpha diminui suavemente (pode usar curve mais tarde)
                 cgNotificacao.alpha = Mathf.Lerp(1f, 0f, t);
 
-                // posição sobe suavemente (ease-out)
-                float ease = 1f - Mathf.Pow(1f - t, 2f); // ease out quadratic
+                float ease = 1f - Mathf.Pow(1f - t, 2f);
                 caixaNotificacao.transform.localPosition = Vector3.Lerp(startPos, endPos, ease);
 
                 yield return null;
             }
 
-            // garante final limpo
             cgNotificacao.alpha = 0f;
             caixaNotificacao.transform.localPosition = posNotificacaoOriginal;
             caixaNotificacao.SetActive(false);
 
-            // pequena pausa entre notificações (opcional)
             yield return null;
         }
 
@@ -230,7 +282,7 @@ public class HUD_Interacao : MonoBehaviour
     }
     #endregion
 
-    #region FunçõesCelular
+    #region FuncoesCelular
 
     public void PegarCelular()
     {
@@ -241,6 +293,7 @@ public class HUD_Interacao : MonoBehaviour
         if (botaoLanterna != null)
             botaoLanterna.interactable = true;
     }
+
     private void AbrirCelular()
     {
         if (temCelular && Input.GetKeyDown(KeyCode.F))
@@ -253,20 +306,28 @@ public class HUD_Interacao : MonoBehaviour
             if (HUDativa && HUD_blocodenotas != null && HUD_blocodenotas.activeSelf)
                 HUD_blocodenotas.SetActive(false);
 
-            BloqueioAoAbrirCelular(HUDativa);
+            BloqueioAoAbrirCelularDiario(HUDativa);
         }
     }
-    private void BloqueioAoAbrirCelular(bool bloquear)
+
+    private void BloqueioAoAbrirCelularDiario (bool bloquear)
     {
         bloqueadoPorHUD = bloquear;
 
-        if (playerController != null) playerController.enabled = !bloquear;
+        if (playerController != null)
+            playerController.enabled = !bloquear;
 
         if (playerRigidbody != null)
         {
             if (bloquear)
             {
+                // zera rotaÃ§Ã£o e velocidade linear (propriedade correta: velocity)
                 playerRigidbody.angularVelocity = Vector3.zero;
+                playerRigidbody.linearVelocity = Vector3.zero;
+            }
+            else
+            {
+                // nada especial ao desbloquear por enquanto
             }
         }
 
@@ -282,13 +343,14 @@ public class HUD_Interacao : MonoBehaviour
         }
     }
 
+
     public void LigarLanterna()
     {
         if (!temCelular) return;
 
         if (lanternaLuz == null)
         {
-            Debug.LogWarning("[HUD] lanternaLuz não atribuída!");
+            Debug.LogWarning("[HUD] lanternaLuz nï¿½o atribuï¿½da!");
             return;
         }
 
@@ -303,7 +365,6 @@ public class HUD_Interacao : MonoBehaviour
         }
     }
 
-
     public void AbrirBlocodeNotas()
     {
         if (HUD_blocodenotas == null || HUD_Celular == null) return;
@@ -312,7 +373,7 @@ public class HUD_Interacao : MonoBehaviour
         HUD_Celular.SetActive(false);
         HUDativa = false;
 
-        BloqueioAoAbrirCelular(true);
+        BloqueioAoAbrirCelularDiario(true);
     }
 
     public void FecharBlocodeNotas()
@@ -321,23 +382,30 @@ public class HUD_Interacao : MonoBehaviour
 
         HUD_blocodenotas.SetActive(false);
 
-        BloqueioAoAbrirCelular(false);
+        BloqueioAoAbrirCelularDiario(false);
     }
 
     #endregion
 
-    #region FunçõesDiario
+    #region FuncoesDiario
 
     public void AbrirFecharDiario()
     {
         if (painelDiario == null) return;
+
         bool novo = !painelDiario.activeSelf;
         painelDiario.SetActive(novo);
 
         if (novo)
-            AtualizarPaginaUI();
-    }
+        {
+            AtualizarPaginaUI(immediate: true);
 
+            if (HUD_Celular != null && HUD_Celular.activeSelf)
+                HUD_Celular.SetActive(false);
+        }
+
+        BloqueioAoAbrirCelularDiario(novo);
+    }
     public void PegarDiario()
     {
         if (desbloqueado) return;
@@ -354,55 +422,135 @@ public class HUD_Interacao : MonoBehaviour
             {
                 if (e.item is PageItem p)
                 {
-                    // integra sem sobrescrever se já existir
                     if (!paginasColetadas.ContainsKey(p.numeroPagina))
                         paginasColetadas[p.numeroPagina] = p;
                 }
             }
         }
 
-        AtualizarPaginaUI();
+        AtualizarPaginaUI(immediate: true);
 
-        HUD_Interacao.instancia?.MostrarNotificacao("Diário coletado! Pressione Q para abrir.", null);
+        if (HUD_Interacao.instancia != null) MostrarNotificacao("Diario coletado! Pressione Q para abrir.", null);
     }
-
     public void IntegrarPagina(PageItem page)
     {
-        if (page == null) return;
+        if (this == null)
+        {
+            Debug.LogWarning("[HUD] IntegrarPagina chamado, mas HUD invalida.");
+            return;
+        }
 
-        // substitui/insere a página coletada
+        // Caso 1: chamaram sem passar a pÃ¡gina â€” tentar encontrar no inventÃ¡rio
+        if (page == null)
+        {
+            var itens = SistemaInventario.instancia?.GetItens();
+            if (itens == null || itens.Count == 0)
+            {
+                Debug.Log("[HUD] IntegrarPagina recebeu null e nÃ£o encontrou nada no inventÃ¡rio.");
+                return;
+            }
+
+            bool anyIntegrated = false;
+
+            foreach (var entrada in itens.ToArray()) // ToArray() para evitar alteraÃ§Ã£o da lista durante iteraÃ§Ã£o
+            {
+                if (entrada == null || entrada.item == null) continue;
+
+                if (entrada.item is PageItem p)
+                {
+                    if (paginasColetadas.ContainsKey(p.numeroPagina))
+                    {
+                        Debug.Log($"[HUD] IntegrarPagina: pÃ¡gina #{p.numeroPagina} jÃ¡ integrada, pulando.");
+                        continue;
+                    }
+
+                    paginasColetadas[p.numeroPagina] = p;
+                    Debug.Log($"[HUD] IntegrarPagina: integraÃ§Ã£o automÃ¡tica da pÃ¡gina #{p.numeroPagina} (vinda do inventÃ¡rio).");
+
+                    if (audioSourceDiario != null && somColetaPagina != null)
+                        audioSourceDiario.PlayOneShot(somColetaPagina);
+
+                    MostrarNotificacao($"PÃ¡gina {p.numeroPagina} coletada. Pagina { p.numeroPagina} Foi adicionada ao Diario", p.iconeItem);
+
+                    SistemaInventario.instancia?.RemoverItem(p, 1);
+
+                    anyIntegrated = true;
+                }
+            }
+
+            if (anyIntegrated)
+                AtualizarPaginaUI(immediate: false);
+            else
+                Debug.Log("[HUD] IntegrarPagina: nÃ£o encontrou PageItem nÃ£o integrado no inventÃ¡rio.");
+
+            return;
+        }
+
+        // --- A partir daqui, page != null -- validaÃ§Ãµes e integraÃ§Ã£o direta ---
+        if (page.numeroPagina < 1 || page.numeroPagina > totalPages)
+        {
+            Debug.LogWarning($"[HUD] IntegrarPagina: nÃºmero de pÃ¡gina invÃ¡lido ({page.numeroPagina}). totalPages={totalPages}");
+            return;
+        }
+
+        bool jaExistia = paginasColetadas.ContainsKey(page.numeroPagina);
+
+        // salva a pÃ¡gina (idempotente)
         paginasColetadas[page.numeroPagina] = page;
 
-        // som de coleta
-        if (audioSource != null && somColetaPagina != null)
-            audioSource.PlayOneShot(somColetaPagina);
+        Debug.Log($"[HUD] IntegrarPagina chamado: #{page.numeroPagina} (asset: {page.name}) - jaExistia={jaExistia}");
 
-        // atualizar se diário aberto
-        AtualizarPaginaUI();
+        if (!jaExistia)
+        {
+            if (audioSourceDiario != null && somColetaPagina != null)
+                audioSourceDiario.PlayOneShot(somColetaPagina);
+
+            MostrarNotificacao($"PÃ¡gina {page.numeroPagina} coletada", page.iconeItem);
+
+            // se a pÃ¡gina estiver no inventÃ¡rio (coleta padrÃ£o), remove 1
+            if (SistemaInventario.instancia != null)
+            {
+                // tenta remover uma unidade do item correspondente
+                SistemaInventario.instancia.RemoverItem(page, 1);
+                Debug.Log($"[HUD] IntegrarPagina: removeu a PageItem #{page.numeroPagina} do inventÃ¡rio (se existia).");
+            }
+        }
+        else
+        {
+            Debug.Log($"[HUD] IntegrarPagina: pÃ¡gina #{page.numeroPagina} jÃ¡ estava integrada â€” apenas atualizando UI.");
+        }
+
+        // atualiza a UI
+        AtualizarPaginaUI(immediate: false);
     }
-
-    public void IrParaPagina(int numero)
+    public void IrParaPagina(int numero, bool animate = true)
     {
-        if (numero < 1) numero = 1;
-        if (numero > totalPages) numero = totalPages;
-        paginaAtual = numero;
+        numero = Mathf.Clamp(numero, 1, totalPages);
+        if (numero == paginaAtual && !animate) return;
 
-        if (audioSource != null && somFolhear != null)
-            audioSource.PlayOneShot(somFolhear);
+        if (isAnimating) return;
 
-        AtualizarPaginaUI();
+        if (animate && audioSourceDiario != null && somFolhear != null)
+            audioSourceDiario.PlayOneShot(somFolhear);
+
+        if (animate && conteudoRect != null)
+            StartCoroutine(FlipAnimation(numero));
+        else
+        {
+            paginaAtual = numero;
+            AtualizarPaginaUI(immediate: true);
+        }
     }
-
-    private void AtualizarPaginaUI()
+    private void AtualizarPaginaUI(bool immediate = false)
     {
         if (painelDiario == null) return;
 
         if (indicadorPaginaUI != null)
-            indicadorPaginaUI.text = $"Página {paginaAtual} / {totalPages}";
+            indicadorPaginaUI.text = $"Pï¿½gina {paginaAtual} / {totalPages}";
 
         if (paginasColetadas.TryGetValue(paginaAtual, out PageItem page))
         {
-            if (textoPaginaUI != null) textoPaginaUI.text = string.IsNullOrEmpty(page.textoPagina) ? "<Página vazia>" : page.textoPagina;
+            if (textoPaginaUI != null) textoPaginaUI.text = string.IsNullOrEmpty(page.textoPagina) ? "<Pï¿½gina vazia>" : page.textoPagina;
             if (imagemPaginaUI != null)
             {
                 imagemPaginaUI.sprite = page.imagemPagina;
@@ -411,7 +559,7 @@ public class HUD_Interacao : MonoBehaviour
         }
         else
         {
-            if (textoPaginaUI != null) textoPaginaUI.text = "<Página não coletada>";
+            if (textoPaginaUI != null) textoPaginaUI.text = "<Pï¿½gina nï¿½o coletada>";
             if (imagemPaginaUI != null)
             {
                 imagemPaginaUI.sprite = null;
@@ -419,12 +567,86 @@ public class HUD_Interacao : MonoBehaviour
             }
         }
     }
+    private void VerificarEntradaDiario()
+    {
+        if (!desbloqueado) return;
+
+        if (Input.GetKeyDown(teclaAbrir))
+            AbrirFecharDiario();
+    }
+    public void NextPage()
+    {
+        int alvo = Mathf.Min(paginaAtual + 1, totalPages);
+        IrParaPagina(alvo, animate: true);
+    }
+    public void PreviousPage()
+    {
+        int alvo = Mathf.Max(paginaAtual - 1, 1);
+        IrParaPagina(alvo, animate: true);
+    }
+    private IEnumerator FlipAnimation(int targetPage)
+    {
+        if (conteudoRect == null)
+        {
+            paginaAtual = targetPage;
+            AtualizarPaginaUI(immediate: true);
+            yield break;
+        }
+
+        isAnimating = true;
+        InteracoesBotoes(false);
+
+        Vector3 originalScale = conteudoRect.localScale;
+        float half = duracaoFolheado * 0.5f;
+        float elapsed = 0f;
+
+        while (elapsed < half)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / half);
+            float k = curvaFolheado.Evaluate(t);
+            Vector3 s = originalScale;
+            s.x = Mathf.Lerp(1f, 0f, k);
+            conteudoRect.localScale = s;
+            yield return null;
+        }
+
+        paginaAtual = Mathf.Clamp(targetPage, 1, totalPages);
+        AtualizarPaginaUI(immediate: true);
+
+        elapsed = 0f;
+        while (elapsed < half)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / half);
+            float k = curvaFolheado.Evaluate(t);
+            Vector3 s = originalScale;
+            s.x = Mathf.Lerp(0f, 1f, k);
+            conteudoRect.localScale = s;
+            yield return null;
+        }
+
+        conteudoRect.localScale = originalScale;
+
+        InteracoesBotoes(true);
+        isAnimating = false;
+    }
+    private void InteracoesBotoes(bool valor)
+    {
+        if (botaoAnterior != null) botaoAnterior.interactable = valor;
+        if (botaoProximo != null) botaoProximo.interactable = valor;
+    }
     public bool TemPagina(int numero) => paginasColetadas.ContainsKey(numero);
 
-#endregion
+    #endregion
 
+    private void OnDestroy()
+    {
+        if (instancia == this)
+            instancia = null;
+    }
 
-private void StopCoroutineSafe(string coroName)
+    private void StopCoroutineSafe(string coroName)
     {
         try { StopCoroutine(coroName); } catch { }
     }

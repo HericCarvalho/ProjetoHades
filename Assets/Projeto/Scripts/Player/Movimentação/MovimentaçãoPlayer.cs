@@ -72,7 +72,7 @@ public class MovimentaçãoPlayer : MonoBehaviour
         PuloAgachar();
         SistemaStamina();
         AlturaCamera();
-        DetectarInteracao();
+        //DetectarInteracao();
         //HeadbobAvancado();
     }
 
@@ -227,21 +227,21 @@ public class MovimentaçãoPlayer : MonoBehaviour
     #endregion
 
     #region Interação
-    private void DetectarInteracao()
-    {
-        if (Input.GetKeyDown(teclaInteragir))
-        {
-            Debug.DrawRay(cameraReferencia.position, cameraReferencia.forward * alcanceInteracao, Color.red, 1f);
-            Ray ray = new Ray(cameraReferencia.position, cameraReferencia.forward);
-
-            if (Physics.Raycast(ray, out RaycastHit hit, alcanceInteracao, LayerMask.GetMask("Interagir")))
-            {
-                ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
-                if (item != null)
-                    item.Interagir(this);
-            }
-        }
-    }
+   // private void DetectarInteracao()
+   // {
+   //     if (Input.GetKeyDown(teclaInteragir))
+   //     {
+   //         Debug.DrawRay(cameraReferencia.position, cameraReferencia.forward * alcanceInteracao, Color.red, 1f);
+   //         Ray ray = new Ray(cameraReferencia.position, cameraReferencia.forward);
+   //
+   //         if (Physics.Raycast(ray, out RaycastHit hit, alcanceInteracao, LayerMask.GetMask("Interagir")))
+   //         {
+   //             ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
+   //             if (item != null)
+   //                 item.Interagir(this);
+   //         }
+   //     }
+   // }
     #endregion
 
     public float GetCurrentStamina() => EstaminaAtual;

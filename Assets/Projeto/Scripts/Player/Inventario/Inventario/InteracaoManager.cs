@@ -66,18 +66,16 @@ public class InteracaoManager : MonoBehaviour
     {
         if (objetoInterativo == null) return;
 
+        // pega referência do jogador uma vez
+        MovimentaçãoPlayer jogador = jogadorCamera.GetComponent<MovimentaçãoPlayer>();
+
+        // 1) detecta se é celular (pela tag)
         bool ehCelular = false;
         if (!string.IsNullOrEmpty(tagCelular) && objetoInterativo.gameObject.CompareTag(tagCelular))
             ehCelular = true;
 
-        if (ehCelular)
-        {
-            MovimentaçãoPlayer jogador = jogadorCamera.GetComponent<MovimentaçãoPlayer>();
-            InteragirComCelular(objetoInterativo, jogador, true);
-        }
-
+        // 2) detecta se é diário (pela tag ou pelo nome do item coletável)
         bool ehDiary = false;
-
         if (!string.IsNullOrEmpty(tagDiary) && objetoInterativo.gameObject.CompareTag(tagDiary))
             ehDiary = true;
         else if (!ehDiary && !string.IsNullOrEmpty(nomeItemDiary) && objetoInterativo.itemColetavel != null)
@@ -86,15 +84,42 @@ public class InteracaoManager : MonoBehaviour
                 ehDiary = true;
         }
 
-        objetoInterativo.Interagir(jogadorCamera.GetComponent<MovimentaçãoPlayer>());
+        // 3) captura a PageItem (se houver) ANTES de executar a interação que pode destruir o objeto
+        PageItem paginaASerIntegrada = objetoInterativo.itemColetavel as PageItem;
 
+        // 4) se for celular, faz a lógica de desbloqueio/aviso antes da interação
+        if (ehCelular)
+        {
+            InteragirComCelular(objetoInterativo, jogador, true);
+        }
+
+        // 5) executa a interação normal (pode adicionar ao inventário / destruir o objeto, etc.)
+        objetoInterativo.Interagir(jogador);
+
+        // 6) se era uma PageItem, avisa o HUD para integrar (garante integração mesmo se o objeto de cena foi destruído)
+        if (paginaASerIntegrada != null)
+        {
+            if (HUD_Interacao.instancia != null)
+            {
+                HUD_Interacao.instancia.IntegrarPagina(paginaASerIntegrada);
+                Debug.Log($"[InteracaoManager] Pediu integração da página #{paginaASerIntegrada.numeroPagina}");
+            }
+            else
+            {
+                Debug.LogWarning("[InteracaoManager] HUD_Interacao.instancia == null — não integrou página.");
+            }
+        }
+
+        // 7) se era diário, executa o tratamento específico (mantive seu fluxo original)
         if (ehDiary)
         {
             TratarInteracaoDiary(objetoInterativo);
         }
 
+        // 8) limpa o popup
         RemoverPopup();
     }
+
 
     private void InteragirComCelular(ItemInterativo item, MovimentaçãoPlayer jogador, bool abrirImediatamente = true)
     {
@@ -117,8 +142,8 @@ public class InteracaoManager : MonoBehaviour
 
         HUD_Interacao.instancia?.PegarDiario();
 
-        HUD_Interacao.instancia?.MostrarMensagem("Você coletou o diário.");
-        HUD_Interacao.instancia?.MostrarNotificacao("Diário coletado!", diaryItem != null ? diaryItem.iconeItem : null);
+        HUD_Interacao.instancia?.MostrarMensagem("Aparentemente outras pessoas estiveram aqui antes de mim, talvez esse diario me ajude a sair daqui");
+        HUD_Interacao.instancia?.MostrarNotificacao("Diario coletado!", diaryItem != null ? diaryItem.iconeItem : null);
 
         try
         {
