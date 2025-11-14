@@ -118,6 +118,7 @@ public class HUD_Interacao : MonoBehaviour
     }
 
     #region Inicializadores
+
     private void InicializarMensagensENotificacoes()
     {
         if (caixaMensagem != null)
@@ -138,26 +139,65 @@ public class HUD_Interacao : MonoBehaviour
             caixaNotificacao.SetActive(false);
         }
     }
-
     private void InicializarLanternaUI()
     {
-        // n�o ligar a lanterna automaticamente em Awake
-        // configuramos o bot�o e o estado inicial
+        // debug rápido
+        Debug.Log("[HUD] InicializarLanternaUI: temCelular=" + temCelular + ", botaoLanterna != null: " + (botaoLanterna != null) + ", lanternaLuz != null: " + (lanternaLuz != null));
+
+        // garante que a luz esteja em estado conhecido (desligada por padrão)
+        if (lanternaLuz != null)
+        {
+            // ativa o GameObject da luz se estiver desativado na hierarquia
+            if (!lanternaLuz.gameObject.activeInHierarchy)
+                lanternaLuz.gameObject.SetActive(false); // mantemos OFF por padrão
+
+            // garante parâmetros visíveis caso alguém esqueça no Inspector
+            if (lanternaLuz.intensity <= 0f) lanternaLuz.intensity = 2f;
+            if (lanternaLuz.range <= 0f) lanternaLuz.range = 30f;
+
+            // forçamos disabled por segurança (estado inicial)
+            lanternaLigada = false;
+            lanternaLuz.enabled = false;
+        }
+
+        // configura o botão (se houver)
         if (botaoLanterna != null)
         {
             botaoLanterna.onClick.RemoveAllListeners();
-            botaoLanterna.onClick.AddListener(LigarLanterna);
+            // adiciona listener seguro (usa lambda para evitar problemas com referências)
+            botaoLanterna.onClick.AddListener(() =>
+            {
+                LigarLanterna();
+            });
+
+            // interatividade depende de temCelular (será atualizada em PegarCelular também)
             botaoLanterna.interactable = temCelular;
         }
+        else
+        {
+            Debug.LogWarning("[HUD] botaoLanterna NÃO atribuído no Inspector.");
+            // tentativa de fallback: procura um Button dentro do painel do celular (opcional)
+            if (HUD_Celular != null)
+            {
+                var btn = HUD_Celular.GetComponentInChildren<UnityEngine.UI.Button>();
+                if (btn != null)
+                {
+                    botaoLanterna = btn;
+                    Debug.Log("[HUD] botaoLanterna encontrado como fallback em HUD_Celular: " + btn.name);
+                    botaoLanterna.onClick.RemoveAllListeners();
+                    botaoLanterna.onClick.AddListener(LigarLanterna);
+                    botaoLanterna.interactable = temCelular;
+                }
+            }
+        }
 
-        // prote��o: configura audioSource para n�o estar em loop
+        // proteção: configura audioSource para não estar em loop
         if (audioSource != null)
         {
             audioSource.loop = false;
             audioSource.playOnAwake = false;
         }
     }
-
     private void InicializarDiario()
     {
         if (painelDiario != null)
@@ -215,6 +255,7 @@ public class HUD_Interacao : MonoBehaviour
             }
         }
     }
+
     #endregion
 
     private void Update()
@@ -387,11 +428,7 @@ public class HUD_Interacao : MonoBehaviour
     {
         if (!temCelular) return;
 
-        if (lanternaLuz == null)
-        {
-            Debug.LogWarning("[HUD] lanternaLuz n�o atribu�da!");
-            return;
-        }
+        lanternaLigada = lanternaLuz.enabled;
 
         lanternaLigada = !lanternaLigada;
         lanternaLuz.enabled = lanternaLigada;
@@ -399,10 +436,9 @@ public class HUD_Interacao : MonoBehaviour
         MostrarNotificacao(lanternaLigada ? "Lanterna ligada" : "Lanterna desligada", null);
 
         if (audioSource != null && somLanterna != null)
-        {
             audioSource.PlayOneShot(somLanterna);
-        }
     }
+
     public void AbrirBlocodeNotas()
     {
         if (HUD_blocodenotas == null || HUD_Celular == null) return;
