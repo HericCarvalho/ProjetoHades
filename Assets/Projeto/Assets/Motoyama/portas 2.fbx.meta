@@ -3,7 +3,32 @@ guid: cd19556c27dc1544ca78d261fc4efd0a
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Cracked Concrete Surface.001
+    second: {fileID: 2100000, guid: 4d58b750a969be6469721f10ac4eddfa, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.002
+    second: {fileID: 2100000, guid: 7953bd7389498304b896aeebf5de8904, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.003
+    second: {fileID: 2100000, guid: 5da316528f40b044c9b0a01773bc332b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.004
+    second: {fileID: 2100000, guid: 5224f794d20da504abb8d71cf476164d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.005
+    second: {fileID: 2100000, guid: b0f693781686bfa4684f0d922b074077, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
