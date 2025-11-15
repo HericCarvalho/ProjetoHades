@@ -164,7 +164,24 @@ public class InteracaoManager : MonoBehaviour
         objetoRend = rend;
         matOriginal = rend != null ? rend.material : null;
 
-        popupInstance = Instantiate(prefabPopup, item.transform.position + Vector3.up * alturaPopup, Quaternion.identity);
+        // instancia o popup (como você já fazia)
+        popupInstance = Instantiate(prefabPopup, Vector3.zero, Quaternion.identity);
+
+        // calcula posição com base nos bounds do renderer (mais robusto que pivot)
+        if (rend != null)
+        {
+            Bounds b = rend.bounds;
+            Vector3 top = new Vector3(b.center.x, b.max.y, b.center.z);
+            // aplica um pequeno offset para ficar acima
+            float offset = alturaPopup;
+            popupInstance.transform.position = top + Vector3.up * offset;
+        }
+        else
+        {
+            // fallback: posição padrão do item
+            popupInstance.transform.position = item.transform.position + Vector3.up * alturaPopup;
+        }
+
         popupTexto = popupInstance.GetComponentInChildren<TMP_Text>();
         popupIcone = popupInstance.GetComponentInChildren<Image>();
 
@@ -175,7 +192,15 @@ public class InteracaoManager : MonoBehaviour
             popupIcone.enabled = iconeInteracao != null;
             popupIcone.preserveAspect = true;
         }
+
+        // assegura que o popup "olhe" para a câmera do jogador
+        if (jogadorCamera != null)
+        {
+            popupInstance.transform.LookAt(jogadorCamera);
+            popupInstance.transform.Rotate(0, 180f, 0);
+        }
     }
+
 
     void RemoverPopup()
     {
@@ -204,7 +229,17 @@ public class InteracaoManager : MonoBehaviour
     void PulsarContorno()
     {
         if (objetoRend == null || materialContorno == null) return;
+
+        // ignora se o objeto interativo (ou seu root) estiver marcado para não ter outline
+        if (objetoInterativo != null)
+        {
+            Transform root = objetoInterativo.transform;
+            if (root.CompareTag("SemOutline") || (root.root != null && root.root.CompareTag("SemOutline")))
+                return;
+        }
+
         float t = Mathf.Sin(Time.time * pulsacaoVel) * pulsacaoMagnitude + 0.5f;
         objetoRend.material.Lerp(matOriginal, materialContorno, t);
     }
+
 }

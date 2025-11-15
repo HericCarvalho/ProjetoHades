@@ -12,7 +12,7 @@ public class MovimentaçãoPlayer : MonoBehaviour
     [SerializeField] private float MouseSensibilidade;
 
     [Header("Câmera")]
-    [SerializeField] private Transform cameraReferencia;
+    public Transform cameraReferencia;
     [SerializeField] private float AlturaEmPé;
     [SerializeField] private float AlturaAgachado;
     [SerializeField] private float VelocidadeTransição;
@@ -49,6 +49,9 @@ public class MovimentaçãoPlayer : MonoBehaviour
     private float RotacaoVertical;
     private Rigidbody RB;
     private bool isGrounded = true;
+
+    private bool movimentoHabilitado = true; 
+    private bool rotacaoHabilitada = true;   
 
     private void Start()
     {
@@ -141,13 +144,17 @@ public class MovimentaçãoPlayer : MonoBehaviour
     #region Movimento e câmera
     private void RotacaoMouse()
     {
+        // Respeita controle de rotação (Locker usará SetCanRotate)
+        if (!rotacaoHabilitada) return;
+
         float mouseX = Input.GetAxis("Mouse X") * MouseSensibilidade;
         transform.Rotate(Vector3.up * mouseX);
 
         float mouseY = Input.GetAxis("Mouse Y") * MouseSensibilidade;
         RotacaoVertical -= mouseY;
         RotacaoVertical = Mathf.Clamp(RotacaoVertical, -80f, 80f);
-        cameraReferencia.localRotation = Quaternion.Euler(RotacaoVertical, 0f, cameraReferencia.localRotation.eulerAngles.z);
+        if (cameraReferencia != null)
+            cameraReferencia.localRotation = Quaternion.Euler(RotacaoVertical, 0f, cameraReferencia.localRotation.eulerAngles.z);
     }
 
     private void PuloAgachar()
@@ -202,6 +209,8 @@ public class MovimentaçãoPlayer : MonoBehaviour
     #region Movimento físico
     private void FixedUpdate()
     {
+        if (!movimentoHabilitado) return;
+
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
 
@@ -227,21 +236,64 @@ public class MovimentaçãoPlayer : MonoBehaviour
     #endregion
 
     #region Interação
-   // private void DetectarInteracao()
-   // {
-   //     if (Input.GetKeyDown(teclaInteragir))
-   //     {
-   //         Debug.DrawRay(cameraReferencia.position, cameraReferencia.forward * alcanceInteracao, Color.red, 1f);
-   //         Ray ray = new Ray(cameraReferencia.position, cameraReferencia.forward);
-   //
-   //         if (Physics.Raycast(ray, out RaycastHit hit, alcanceInteracao, LayerMask.GetMask("Interagir")))
-   //         {
-   //             ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
-   //             if (item != null)
-   //                 item.Interagir(this);
-   //         }
-   //     }
-   // }
+    // private void DetectarInteracao()
+    // {
+    //     if (Input.GetKeyDown(teclaInteragir))
+    //     {
+    //         Debug.DrawRay(cameraReferencia.position, cameraReferencia.forward * alcanceInteracao, Color.red, 1f);
+    //         Ray ray = new Ray(cameraReferencia.position, cameraReferencia.forward);
+    //
+    //         if (Physics.Raycast(ray, out RaycastHit hit, alcanceInteracao, LayerMask.GetMask("Interagir")))
+    //         {
+    //             ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
+    //             if (item != null)
+    //                 item.Interagir(this);
+    //         }
+    //     }
+    // }
+    #endregion
+
+    #region API pública para outros scripts (Locker, HUD, etc.)
+    public void SetCanMove(bool canMove)
+    {
+        movimentoHabilitado = canMove;
+
+        if (!canMove && RB != null)
+        {
+            // zera velocidade residual para não "deslizar" para dentro do locker
+            RB.linearVelocity = Vector3.zero;
+            RB.angularVelocity = Vector3.zero;
+        }
+    }
+
+
+    public void SetCanRotate(bool canRotate)
+    {
+        rotacaoHabilitada = canRotate;
+    }
+
+    public void SetBodyVisible(bool visible)
+    {
+        int count = 0;
+        // pega todos os tipos de renderer (MeshRenderer, SkinnedMeshRenderer...)
+        var renders = GetComponentsInChildren<Renderer>(true);
+        foreach (var r in renders)
+        {
+            // evita desligar a própria câmera se ela tiver renderer (normalmente não tem)
+            if (cameraReferencia != null && (r.gameObject == cameraReferencia.gameObject))
+                continue;
+
+            // opcional: se você tiver objetos que NÃO quer esconder, marque-os com tag "KeepVisible"
+            if (r.gameObject.CompareTag("KeepVisible")) continue;
+
+            r.enabled = visible;
+            count++;
+        }
+        Debug.Log($"[MovimentaçãoPlayer] SetBodyVisible({visible}) — renderers afetados: {count}");
+    }
+
+
+
     #endregion
 
     public float GetCurrentStamina() => EstaminaAtual;
