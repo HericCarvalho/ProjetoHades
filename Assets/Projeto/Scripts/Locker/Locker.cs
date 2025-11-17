@@ -3,12 +3,12 @@ using UnityEngine;
 public class Locker : MonoBehaviour
 {
     [Header("Animator da porta")]
-    public Animator portaAnimator;            // setar no inspector (Animator do objeto 'Porta')
-    public string parametroOpen = "Open";     // nome do bool parameter no Animator
+    public Animator portaAnimator;         
+    public string parametroOpen = "Abrido";
 
     [Header("Pontos de camera")]
-    public Transform cameraPointOutside;      // ponto para câmera quando fora
-    public Transform cameraPointInside;       // ponto para câmera quando dentro
+    public Transform cameraPointOutside;   
+    public Transform cameraPointInside;    
 
     [Header("Transição")]
     public float tempoTransicao = 0.6f;
@@ -16,16 +16,19 @@ public class Locker : MonoBehaviour
 
     [Header("Config")]
     public bool usarAnimador = true;   
+    [SerializeField] private KeyCode teclaInteragir = KeyCode.E;
 
-
-    // estado
     private bool estaDentro = false;
     private bool isAnimating = false;
 
-    // referências runtime
     private MovimentaçãoPlayer playerController;
     private Transform playerCamera;
+    private Coroutine exitListenerCoroutine = null;
 
+    //PosiçãoOriginal
+    private Transform originalCameraParent = null;
+    private Vector3 originalCameraLocalPos;
+    private Quaternion originalCameraLocalRot;
 
     private void Start()
     {
@@ -39,6 +42,7 @@ public class Locker : MonoBehaviour
         if (!estaDentro) StartCoroutine(EnterRoutine());
         else StartCoroutine(ExitRoutine());
     }
+
 
     private IEnumerator EnterRoutine()
     {
@@ -59,15 +63,21 @@ public class Locker : MonoBehaviour
         playerCamera = playerController.cameraReferencia;
         if (playerCamera == null) { Debug.LogWarning("[Locker] cameraReferencia não encontrada."); isAnimating = false; yield break; }
 
+        // SALVA estado original da câmera para restaurar depois
+        originalCameraParent = playerCamera.parent;
+        originalCameraLocalPos = playerCamera.localPosition;
+        originalCameraLocalRot = playerCamera.localRotation;
+
         Vector3 startPos = playerCamera.position;
         Quaternion startRot = playerCamera.rotation;
         Vector3 targetPos = cameraPointInside != null ? cameraPointInside.position : startPos;
         Quaternion targetRot = cameraPointInside != null ? cameraPointInside.rotation : startRot;
 
-        // permite que o jogador olhe enquanto está dentro (ajuste conforme desejar)
+        // enquanto dentro, normalmente queremos que o jogador consiga olhar (pitch/yaw)
+        // mas a rotação yaw depende do transform do jogador — mantemos SetCanRotate(true)
         playerController.SetCanRotate(true);
 
-        // realiza a transição suavemente
+        // TRANSIÇÃO: movemos a câmera no espaço mundial para o ponto interno
         float t = 0f;
         while (t < tempoTransicao)
         {
@@ -78,23 +88,38 @@ public class Locker : MonoBehaviour
             yield return null;
         }
 
+        // garante posição final
         playerCamera.position = targetPos;
         playerCamera.rotation = targetRot;
 
-        // parent opcional para seguir o locker
+        // parent opcional para seguir o locker: parented localmente ao ponto interno
         if (cameraPointInside != null) playerCamera.SetParent(cameraPointInside, true);
 
         estaDentro = true;
         isAnimating = false;
         Debug.Log("[Locker] EnterRoutine end — dentro");
+
+        // inicia listener que aguarda a tecla para sair
+        if (exitListenerCoroutine != null) StopCoroutine(exitListenerCoroutine);
+        exitListenerCoroutine = StartCoroutine(ExitListener());
     }
+
+
 
     private IEnumerator ExitRoutine()
     {
-        Debug.Log("[Locker] ExitRoutine start");
+        if (isAnimating) yield break;
         if (!TryCapturePlayer()) { Debug.LogWarning("[Locker] ExitRoutine: player não capturado."); yield break; }
 
+        // cancela listener pra não começar duas saídas
+        if (exitListenerCoroutine != null)
+        {
+            StopCoroutine(exitListenerCoroutine);
+            exitListenerCoroutine = null;
+        }
+
         isAnimating = true;
+        Debug.Log("[Locker] ExitRoutine start");
 
         // anima porta fechar
         if (usarAnimador && portaAnimator != null)
@@ -103,13 +128,29 @@ public class Locker : MonoBehaviour
         playerCamera = playerController.cameraReferencia;
         if (playerCamera == null) { Debug.LogWarning("[Locker] cameraReferencia não encontrada."); isAnimating = false; yield break; }
 
-        // preparar retorno
+        // PREPARA transição de volta (world space)
         Vector3 startPos = playerCamera.position;
         Quaternion startRot = playerCamera.rotation;
-        Vector3 targetPos = cameraPointOutside != null ? cameraPointOutside.position : startPos;
-        Quaternion targetRot = cameraPointOutside != null ? cameraPointOutside.rotation : startRot;
 
-        // se estava parented, unparent para transitar em world space
+        // target será o transform original (se salvarmos) ou o ponto outside se houver
+        Vector3 targetPos;
+        Quaternion targetRot;
+
+        if (originalCameraParent != null)
+        {
+            // se havia parent original, restauramos local target com base nele
+            // calculamos world pos/rot correspondentes ao original local transform
+            targetPos = originalCameraParent.TransformPoint(originalCameraLocalPos);
+            targetRot = originalCameraParent.rotation * originalCameraLocalRot;
+        }
+        else
+        {
+            // fallback para cameraPointOutside world transform
+            targetPos = cameraPointOutside != null ? cameraPointOutside.position : playerCamera.position;
+            targetRot = cameraPointOutside != null ? cameraPointOutside.rotation : playerCamera.rotation;
+        }
+
+        // se estava parented ao cameraPointInside, unparent para permitir movimento em world space
         playerCamera.SetParent(null, true);
 
         float t = 0f;
@@ -122,15 +163,27 @@ public class Locker : MonoBehaviour
             yield return null;
         }
 
+        // garante posição final
         playerCamera.position = targetPos;
         playerCamera.rotation = targetRot;
 
-        // reparent se necessario (coloca como child do parent original se existir)
-        if (cameraPointOutside != null && cameraPointOutside.parent != null)
+        // restaura parent e valores locais originais (se existiam)
+        if (originalCameraParent != null)
+        {
+            playerCamera.SetParent(originalCameraParent, true);
+            playerCamera.localPosition = originalCameraLocalPos;
+            playerCamera.localRotation = originalCameraLocalRot;
+        }
+        else if (cameraPointOutside != null && cameraPointOutside.parent != null)
+        {
+            // se não havia parent original, opcionalmente parent para cameraPointOutside.parent
             playerCamera.SetParent(cameraPointOutside.parent, true);
+        }
 
         // mostrar corpo e restaurar controles
         playerController.SetBodyVisible(true);
+
+        // restaurar rotação/movimentação
         playerController.SetCanRotate(true);
         playerController.SetCanMove(true);
 
@@ -140,7 +193,25 @@ public class Locker : MonoBehaviour
     }
 
 
-    // tenta capturar o MovimentaçãoPlayer
+    private IEnumerator ExitListener()
+    {
+        // enquanto estiver dentro, aguarda a tecla de interação para sair
+        while (estaDentro)
+        {
+            if (Input.GetKeyDown(teclaInteragir))
+            {
+                // não tenta sair se já estiver animando
+                if (!isAnimating)
+                {
+                    StartCoroutine(ExitRoutine());
+                    yield break;
+                }
+            }
+            yield return null;
+        }
+    }
+
+
     private bool TryCapturePlayer()
     {
         if (playerController != null) return true;
@@ -152,4 +223,5 @@ public class Locker : MonoBehaviour
         Debug.LogWarning("[Locker] MovimentaçãoPlayer não encontrado.");
         return false;
     }
+
 }

@@ -23,6 +23,7 @@ public class MovimentaçãoPlayer : MonoBehaviour
     [SerializeField] private float intensidadeRotacao = 1.5f;
     [SerializeField] private float velocidadeBob = 6f;
     [SerializeField] private float intensidadeTremor = 0.01f;
+
     private float contadorMovimento;
     private Vector3 posicaoInicialCamera;
     private Quaternion rotacaoInicialCamera;
@@ -267,30 +268,32 @@ public class MovimentaçãoPlayer : MonoBehaviour
     }
 
 
+
     public void SetCanRotate(bool canRotate)
     {
         rotacaoHabilitada = canRotate;
     }
 
-    public void SetBodyVisible(bool visible)
+   public void SetBodyVisible(bool visible)
+{
+    int count = 0;
+    // pega todos os tipos de renderer (MeshRenderer, SkinnedMeshRenderer...)
+    var renders = GetComponentsInChildren<Renderer>(true);
+    foreach (var r in renders)
     {
-        int count = 0;
-        // pega todos os tipos de renderer (MeshRenderer, SkinnedMeshRenderer...)
-        var renders = GetComponentsInChildren<Renderer>(true);
-        foreach (var r in renders)
-        {
-            // evita desligar a própria câmera se ela tiver renderer (normalmente não tem)
-            if (cameraReferencia != null && (r.gameObject == cameraReferencia.gameObject))
-                continue;
+        // evita desligar a própria câmera se ela tiver renderer (normalmente não tem)
+        if (cameraReferencia != null && r.gameObject == cameraReferencia.gameObject)
+            continue;
 
-            // opcional: se você tiver objetos que NÃO quer esconder, marque-os com tag "KeepVisible"
-            if (r.gameObject.CompareTag("KeepVisible")) continue;
+        // se você tiver objetos que NÃO quer esconder, marque-os com tag "KeepVisible"
+        if (r.gameObject.CompareTag("KeepVisible")) continue;
 
-            r.enabled = visible;
-            count++;
-        }
-        Debug.Log($"[MovimentaçãoPlayer] SetBodyVisible({visible}) — renderers afetados: {count}");
+        r.enabled = visible;
+        count++;
     }
+    Debug.Log($"[MovimentaçãoPlayer] SetBodyVisible({visible}) — renderers afetados: {count}");
+}
+
 
 
 

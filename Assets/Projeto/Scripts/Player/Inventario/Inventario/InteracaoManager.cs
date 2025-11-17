@@ -116,6 +116,19 @@ public class InteracaoManager : MonoBehaviour
             TratarInteracaoDiary(objetoInterativo);
         }
 
+        // supondo que objetoInterativo é um ItemInterativo ligado à fusebox (ou que você detectou a FuseBox via collider)
+        CaixadeFusiveis box = objetoInterativo.GetComponentInParent<CaixadeFusiveis>();
+        if (box != null)
+        {
+            // supondo que exista um único FuseBoxUI na cena (arraste via inspector)
+            var ui = FindObjectOfType<UI_CaixadeFusiveis>();
+            if (ui != null)
+            {
+                ui.OpenFor(box);
+            }
+        }
+
+
         // 8) limpa o popup
         RemoverPopup();
     }
@@ -164,24 +177,11 @@ public class InteracaoManager : MonoBehaviour
         objetoRend = rend;
         matOriginal = rend != null ? rend.material : null;
 
-        // instancia o popup (como você já fazia)
-        popupInstance = Instantiate(prefabPopup, Vector3.zero, Quaternion.identity);
+        // calcula ponto acima do objeto usando bounds (mais confiável que transform.position)
+        Vector3 worldPos = GetTopWorldPosition(item.gameObject, alturaPopup);
 
-        // calcula posição com base nos bounds do renderer (mais robusto que pivot)
-        if (rend != null)
-        {
-            Bounds b = rend.bounds;
-            Vector3 top = new Vector3(b.center.x, b.max.y, b.center.z);
-            // aplica um pequeno offset para ficar acima
-            float offset = alturaPopup;
-            popupInstance.transform.position = top + Vector3.up * offset;
-        }
-        else
-        {
-            // fallback: posição padrão do item
-            popupInstance.transform.position = item.transform.position + Vector3.up * alturaPopup;
-        }
-
+        // instancia sem parent (world space)
+        popupInstance = Instantiate(prefabPopup, worldPos, Quaternion.identity);
         popupTexto = popupInstance.GetComponentInChildren<TMP_Text>();
         popupIcone = popupInstance.GetComponentInChildren<Image>();
 
@@ -193,16 +193,14 @@ public class InteracaoManager : MonoBehaviour
             popupIcone.preserveAspect = true;
         }
 
-        // assegura que o popup "olhe" para a câmera do jogador
+        // garante que o popup sempre olhe para a câmera do jogador imediatamente
         if (jogadorCamera != null)
         {
             popupInstance.transform.LookAt(jogadorCamera);
             popupInstance.transform.Rotate(0, 180f, 0);
         }
     }
-
-
-    void RemoverPopup()
+    public void RemoverPopup()
     {
         mostrandoPopup = false;
         objetoInterativo = null;
@@ -215,13 +213,59 @@ public class InteracaoManager : MonoBehaviour
         if (objetoRend != null && matOriginal != null) objetoRend.material = matOriginal;
         objetoRend = null;
     }
-
     void AtualizarPopup()
     {
         if (popupInstance == null || objetoInterativo == null) return;
-        popupInstance.transform.position = objetoInterativo.transform.position + Vector3.up * alturaPopup;
-        popupInstance.transform.LookAt(jogadorCamera);
-        popupInstance.transform.Rotate(0, 180f, 0);
+
+        // reposiciona com base nos bounds (evita popup "entrar" no locker)
+        popupInstance.transform.position = GetTopWorldPosition(objetoInterativo.gameObject, alturaPopup);
+
+        // sempre virar para a câmera
+        if (jogadorCamera != null)
+        {
+            popupInstance.transform.LookAt(jogadorCamera);
+            popupInstance.transform.Rotate(0, 180f, 0);
+        }
+    }
+    private Vector3 GetTopWorldPosition(GameObject go, float offset)
+    {
+        // tente Collider primeiro (mais exato para objetos grandes)
+        Collider col = go.GetComponent<Collider>();
+        if (col != null)
+        {
+            Bounds b = col.bounds;
+            return b.center + Vector3.up * (b.extents.y + offset);
+        }
+
+        // fallback para Renderer bounds
+        Renderer r = go.GetComponentInChildren<Renderer>();
+        if (r != null)
+        {
+            Bounds b = r.bounds;
+            return b.center + Vector3.up * (b.extents.y + offset);
+        }
+
+        // fallback final: posição do transform + offset
+        return go.transform.position + Vector3.up * offset;
+    }
+    #endregion
+
+    #region Fusiveis
+
+    public void PlaceFuseAutomatic(CaixadeFusiveis box, Fusiveis fuse)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (box.slots[i] == null)
+            {
+                box.PlaceFuseAtSlot(i, fuse);
+                // opcional: remover do inventário se estava lá
+                SistemaInventario.instancia?.RemoverItem(fuse, 1);
+                return;
+            }
+        }
+        // se não há slot vazio, pode mostrar mensagem
+        HUD_Interacao.instancia?.MostrarMensagem("Caixa cheia: remova um fusível primeiro.");
     }
 
     #endregion
