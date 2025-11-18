@@ -70,17 +70,16 @@ public class InteracaoManager : MonoBehaviour
             ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
             if (item != null)
             {
-                // calcula orientação (opcional): garante que o objeto esteja suficientemente no centro da mira
+                // garante que o objeto esteja suficientemente no centro da mira
                 float dot = Vector3.Dot(jogadorCamera.forward.normalized, (hit.point - jogadorCamera.position).normalized);
                 if (dot < precisaoOlhar)
                 {
-                    // está fora da área visual "precisa" — tratar como não detectado
                     if (mostrandoPopup) RemoverPopup();
                     return;
                 }
 
                 objetoInterativo = item;
-                if (!mostrandoPopup) CriarPopup(item, hit.collider.GetComponent<Renderer>());
+                if (!mostrandoPopup) CriarPopup(item, hit.collider.GetComponent<Renderer>(), hit.point, hit.normal);
                 AtualizarPopup();
                 PulsarContorno();
                 return;
@@ -214,21 +213,45 @@ public class InteracaoManager : MonoBehaviour
     #endregion
 
     #region PopUp
-    void CriarPopup(ItemInterativo item, Renderer rend)
+    void CriarPopup(ItemInterativo item, Renderer rend, Vector3 hitPoint, Vector3 hitNormal)
     {
         mostrandoPopup = true;
         objetoRend = rend;
         matOriginal = rend != null ? rend.material : null;
 
-        // calcula ponto acima do objeto usando bounds (mais confiável que transform.position)
-        Vector3 worldPos = GetTopWorldPosition(item.gameObject, alturaPopup);
+        // primeiro, tenta detectar um anchor customizado (ex: DoorInteractable.popupAnchor)
+        Transform customAnchor = null;
+        DoorInteractable door = item.GetComponentInParent<DoorInteractable>();
+        if (door != null && door.popupAnchor != null)
+        {
+            customAnchor = door.popupAnchor;
+        }
+        else
+        {
+            // também checa se o ItemInterativo tem uma referência opcional (se você a adicionar)
+            var itemAnchor = item.GetComponentInParent<PopupAnchor>();
+            if (itemAnchor != null && itemAnchor.anchor != null)
+                customAnchor = itemAnchor.anchor;
+        }
+
+        Vector3 worldPos;
+        if (customAnchor != null)
+        {
+            // usa a posição do anchor (permite colocar o pivot manualmente no prefab)
+            worldPos = customAnchor.position + Vector3.up * 0.05f; // pequeno uplift para segurança
+        }
+        else
+        {
+            // usa o ponto de impacto e desloca para fora da superfície pela normal do hit
+            float outwardOffset = 0.25f; // quanto afastar do objeto (ajuste se necessário)
+            worldPos = hitPoint + hitNormal.normalized * outwardOffset + Vector3.up * alturaPopup;
+        }
 
         // instancia sem parent (world space)
         popupInstance = Instantiate(prefabPopup, worldPos, Quaternion.identity);
         popupTexto = popupInstance.GetComponentInChildren<TMP_Text>();
         popupIcone = popupInstance.GetComponentInChildren<Image>();
 
-        // mensagem no tom do narrador, concisa
         string narracao = "Existe algo aqui...";
         if (item != null) narracao = $"Pressione {teclaInteragir} para inspecionar ({item.tipo})";
 
@@ -247,7 +270,6 @@ public class InteracaoManager : MonoBehaviour
             popupInstance.transform.Rotate(0, 180f, 0);
         }
     }
-
     public void RemoverPopup()
     {
         mostrandoPopup = false;
@@ -279,25 +301,52 @@ public class InteracaoManager : MonoBehaviour
 
     private Vector3 GetTopWorldPosition(GameObject go, float offset)
     {
-        // tente Collider primeiro (mais exato para objetos grandes)
+        // 1) Se o objeto tem ItemInterativo com interactionPoint definido, use esse ponto (muito preciso)
+        ItemInterativo ii = go.GetComponent<ItemInterativo>();
+        if (ii != null && ii.interactionPoint != null)
+        {
+            Vector3 world = ii.interactionPoint.position;
+            // aplica offset local (transforma de local para world)
+            if (ii.interactionPoint != null && ii.popupOffset != Vector3.zero)
+                world += ii.interactionPoint.TransformVector(ii.popupOffset);
+            return world;
+        }
+
+        // 2) Caso contrário, tenta Collider primeiro (mais exato para objetos grandes)
         Collider col = go.GetComponent<Collider>();
         if (col != null)
         {
             Bounds b = col.bounds;
-            return b.center + Vector3.up * (b.extents.y + offset);
+            Vector3 top = b.center + Vector3.up * (b.extents.y + offset);
+
+            // deslocamento para frente: usa a forward do próprio objeto (reduz chances de popup "entrar" na parede)
+            Vector3 forward = go.transform.forward;
+            float forwardOffset = Mathf.Max(0.15f, offset * 0.5f); // ajuste fino: 0.15m mínimo
+            Vector3 forwardShift = forward.normalized * forwardOffset;
+
+            return top + forwardShift;
         }
 
-        // fallback para Renderer bounds
+        // 3) Fallback para Renderer bounds (se tiver)
         Renderer r = go.GetComponentInChildren<Renderer>();
         if (r != null)
         {
             Bounds b = r.bounds;
-            return b.center + Vector3.up * (b.extents.y + offset);
+            Vector3 top = b.center + Vector3.up * (b.extents.y + offset);
+
+            Vector3 forward = go.transform.forward;
+            float forwardOffset = Mathf.Max(0.15f, offset * 0.5f);
+            Vector3 forwardShift = forward.normalized * forwardOffset;
+
+            return top + forwardShift;
         }
 
-        // fallback final: posição do transform + offset
-        return go.transform.position + Vector3.up * offset;
+        // 4) fallback final: posição do transform + offset + pequeno forward
+        Vector3 basePos = go.transform.position + Vector3.up * offset;
+        basePos += go.transform.forward * 0.15f;
+        return basePos;
     }
+
     #endregion
 
     void PulsarContorno()

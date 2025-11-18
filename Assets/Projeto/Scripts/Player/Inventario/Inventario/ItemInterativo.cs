@@ -12,6 +12,10 @@ public class ItemInterativo : MonoBehaviour
 
     public ItemSistema itemColetavel;
 
+    [Header("Ajuste do popup (opcional)")]
+    public Transform interactionPoint;
+    public Vector3 popupOffset = Vector3.zero;
+
     public UnityEvent onInteragir;
 
     public void Interagir(MovimentaçãoPlayer jogador)
