@@ -9,12 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e902dd1bd3a71648a67225adbb5065d, type: 3}
-  m_Name: Fusivel Vermelho
+  m_Script: {fileID: 11500000, guid: 490143e67ae67bb449af1390c69e7a6f, type: 3}
+  m_Name: FusivelVermelho
   m_EditorClassIdentifier: 
   nomeItem: Fusivel Vermelho
   iconeItem: {fileID: 21300000, guid: 8afc12fd665887145b78d30ace5332f8, type: 3}
   abreJanela: 0
   prefabMundo: {fileID: 0}
-  descricao: "\xC9 um Fusivel e \xE9 Vermelho"
-  fuseId: 3
+  descricao: "\xE9 um fusivel Vermelho"
+  fusivelID: 2
+  icone: {fileID: 21300000, guid: 8afc12fd665887145b78d30ace5332f8, type: 3}

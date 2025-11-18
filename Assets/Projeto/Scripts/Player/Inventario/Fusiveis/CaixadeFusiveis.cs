@@ -1,183 +1,204 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-[Serializable]
-public class ComboEntry
-{
-    [Tooltip("IDs na ordem exata. Preencha com 3 valores separados (ex: 1,2,3). Use 0 para slot vazio se quiser combos parciais.")]
-    public int[] ids = new int[3] { 1, 2, 3 };
-
-    [Tooltip("Evento chamado quando a combinação é ativada (quando a caixa passa a conter exactly esses ids).")]
-    public UnityEvent onActivate;
-
-    [Tooltip("Evento chamado quando a combinação é desfeita (quando a caixa muda para outra combinação).")]
-    public UnityEvent onDeactivate;
-
-    // utilitário: retorna string chave
-    public string Key()
-    {
-        return $"{ids[0]},{ids[1]},{ids[2]}";
-    }
-}
-
+[DisallowMultipleComponent]
 public class CaixadeFusiveis : MonoBehaviour
 {
-    [Header("Slots")]
-    [Tooltip("Somente 3 slots. Cada posição guarda um FuseItem (ScriptableObject).")]
-    public Fusiveis[] slots = new Fusiveis[3];
+    [Header("Config de slots (defina o tamanho para 3 no Inspector)")]
+    public FusivelItem[] slots; // defina o tamanho para 3 no Inspector e deixe os elementos null inicialmente
 
-    [Header("Combinações")]
-    [Tooltip("Liste aqui as combinações possíveis e os eventos a ligar/desligar.")]
-    public List<ComboEntry> combos = new List<ComboEntry>();
+    [Header("Sequências válidas — editar no Inspector (cada entrada deve ter o mesmo tamanho de 'slots')")]
+    public List<SerializableIntArray> sequenciasValidas = new List<SerializableIntArray>();
 
-    // chave da combinação atualmente ativa (ou null se nenhuma)
-    private string activeComboKey = null;
+    [Header("Opções")]
+    public bool tentarAutoFillAoAbrir = true;
+    public bool removerDoInventarioAoColocar = true;
 
-    [Header("Feedback (opcional)")]
-    public AudioSource audioSource;
-    public AudioClip soundPlace;
-    public AudioClip soundRemove;
-    public AudioClip soundComboActivate;
-    public AudioClip soundComboDeactivate;
+    [Header("Eventos")]
+    public UnityEngine.Events.UnityEvent onSolved;
+    public UnityEngine.Events.UnityEvent onPlaced;
+    public UnityEngine.Events.UnityEvent onRemoved;
 
-    [Header("Evento: chamado sempre que o conteúdo da caixa muda (útil para UI)")]
-    public UnityEvent onChanged;
-
-    private void Awake()
+    private void Reset()
     {
-        // valida combos para chaves únicas (ajuda durante edição)
-        var seen = new HashSet<string>();
-        foreach (var c in combos)
-        {
-            if (c == null) continue;
-            string k = c.Key();
-            if (seen.Contains(k))
-                Debug.LogWarning($"[FuseBox] Combinação duplicada encontrada: {k}", this);
-            else
-                seen.Add(k);
-        }
-        // avalia estado inicial (caso haja fusíveis já na cena)
-        EvaluateCombination();
+        // ajuda inicial: cria 3 slots por padrão
+        slots = new FusivelItem[3];
     }
 
-    #region API pública para manipular slots (chamado por UI/Interação)
-    /// <summary>
-    /// Tenta colocar um fuse no slotIndex (0..2).
-    /// NÃO remove do inventário automaticamente — quem chamar pode fazer isso.
-    /// </summary>
-    public bool PlaceFuseAtSlot(int slotIndex, Fusiveis fuse)
+    #region API pública
+    public bool PlaceFuseAtSlot(int slotIndex, FusivelItem fuse)
     {
-        if (slotIndex < 0 || slotIndex >= slots.Length)
-            return false;
-        if (fuse == null)
-            return false;
+        if (slotIndex < 0 || slotIndex >= slots.Length) return false;
+        if (fuse == null) return false;
 
+        // coloca / troca
+        FusivelItem previous = slots[slotIndex];
         slots[slotIndex] = fuse;
-        if (audioSource != null && soundPlace != null) audioSource.PlayOneShot(soundPlace);
 
-        Debug.Log($"[FuseBox] Fuse id={fuse.fuseId} colocado no slot {slotIndex}");
-        EvaluateCombination();
-        onChanged?.Invoke();
+        if (removerDoInventarioAoColocar)
+            SistemaInventario.instancia?.RemoverItem(fuse, 1);
+
+        // Se havia um anterior, devolve ao inventario automaticamente
+        if (previous != null)
+            SistemaInventario.instancia?.AdicionarItem(previous, 1);
+
+        onPlaced?.Invoke();
+        CheckSolved();
         return true;
     }
 
-    /// <summary>Remove e retorna o fuse que estava no slot (ou null se vazio).</summary>
-    public Fusiveis RemoveFuseAtSlot(int slotIndex)
+    public bool RemoveFuseAtSlot(int slotIndex)
     {
-        if (slotIndex < 0 || slotIndex >= slots.Length) return null;
-        var f = slots[slotIndex];
+        if (slotIndex < 0 || slotIndex >= slots.Length) return false;
+        if (slots[slotIndex] == null) return false;
+
+        FusivelItem f = slots[slotIndex];
         slots[slotIndex] = null;
-        if (f != null && audioSource != null && soundRemove != null) audioSource.PlayOneShot(soundRemove);
 
-        Debug.Log($"[FuseBox] Fuse removido do slot {slotIndex} (id={(f != null ? f.fuseId.ToString() : "null")})");
-        EvaluateCombination();
-        onChanged?.Invoke();
-        return f;
+        SistemaInventario.instancia?.AdicionarItem(f, 1);
+        onRemoved?.Invoke();
+        return true;
     }
 
-    /// <summary>Troca dois slots (ordem) — útil para interface drag/drop ou botões 'swap'.</summary>
-    public void SwapSlots(int a, int b)
+    public int[] GetCurrentIDs()
     {
-        if (a < 0 || a >= slots.Length || b < 0 || b >= slots.Length) return;
-        var t = slots[a];
+        int[] ids = new int[slots.Length];
+        for (int i = 0; i < slots.Length; i++)
+            ids[i] = slots[i] == null ? 0 : slots[i].fusivelID;
+        return ids;
+    }
+
+    public void TryAutoFillFromInventory()
+    {
+        if (!tentarAutoFillAoAbrir) return;
+
+        var itens = SistemaInventario.instancia?.GetItens();
+        if (itens == null) return;
+
+        bool anyPlaced = false;
+
+        for (int slotIndex = 0; slotIndex < slots.Length; slotIndex++)
+        {
+            if (slots[slotIndex] != null) continue;
+
+            var compativeis = GetSequenciasCompatíveisComEstadoAtual();
+            bool placedThisSlot = false;
+
+            foreach (var seq in compativeis)
+            {
+                int required = seq[slotIndex];
+                if (required == 0) continue;
+
+                foreach (var entrada in itens)
+                {
+                    if (entrada == null || entrada.item == null) continue;
+                    if (entrada.item is FusivelItem f && f.fusivelID == required)
+                    {
+                        // coloca no slot e remove do inventário
+                        slots[slotIndex] = f;
+                        if (removerDoInventarioAoColocar)
+                            SistemaInventario.instancia?.RemoverItem(f, 1);
+
+                        anyPlaced = true;
+                        placedThisSlot = true;
+                        break;
+                    }
+                }
+                if (placedThisSlot) break;
+            }
+        }
+
+        if (anyPlaced) Debug.Log("[Caixa] Auto-fill colocou pelo menos 1 fusível.");
+        else Debug.Log("[Caixa] Auto-fill não encontrou fusíveis compatíveis no inventário.");
+
+        CheckSolved();
+    }
+    #endregion
+
+    #region Sequência / validação
+    private List<int[]> GetSequenciasCompatíveisComEstadoAtual()
+    {
+        var result = new List<int[]>();
+        int[] current = GetCurrentIDs();
+
+        foreach (var s in sequenciasValidas)
+        {
+            if (s == null) continue;
+            int[] seq = s.ToArray();
+            if (seq.Length != current.Length) continue;
+
+            bool ok = true;
+            for (int i = 0; i < current.Length; i++)
+            {
+                if (current[i] == 0) continue;
+                if (seq[i] != current[i]) { ok = false; break; }
+            }
+
+            if (ok) result.Add(seq);
+        }
+
+        return result;
+    }
+
+    public bool CheckSolved()
+    {
+        int[] current = GetCurrentIDs();
+
+        foreach (var s in sequenciasValidas)
+        {
+            if (s == null) continue;
+            int[] seq = s.ToArray();
+            if (seq.Length != current.Length) continue;
+
+            bool igual = true;
+            for (int i = 0; i < current.Length; i++)
+            {
+                if (seq[i] != current[i]) { igual = false; break; }
+            }
+
+            if (igual)
+            {
+                Debug.Log("[Caixa] Sequência correta! Puzzle resolvido.");
+                onSolved?.Invoke();
+                return true;
+            }
+        }
+
+        return false;
+    }
+    #endregion
+
+    // retorna índice do primeiro slot vazio ou -1
+    public int FirstEmptySlot()
+    {
+        for (int i = 0; i < slots.Length; i++)
+            if (slots[i] == null) return i;
+        return -1;
+    }
+
+    // troca dois slots
+    public bool SwapSlots(int a, int b)
+    {
+        if (a < 0 || a >= slots.Length || b < 0 || b >= slots.Length) return false;
+        var tmp = slots[a];
         slots[a] = slots[b];
-        slots[b] = t;
-        Debug.Log($"[FuseBox] Slots trocados {a} <-> {b}");
-        EvaluateCombination();
-        onChanged?.Invoke();
+        slots[b] = tmp;
+        onRemoved?.Invoke();
+        onPlaced?.Invoke();
+        CheckSolved();
+        return true;
     }
 
-    /// <summary>Retorna a combinação atual como string chave "id1,id2,id3". Usa 0 para slot vazio.</summary>
-    public string GetCurrentKey()
+    // define slot com fusivel (pode passar null para limpar)
+    public bool SetSlot(int index, FusivelItem fuse, bool removeFromInventory = false)
     {
-        int id0 = slots[0] != null ? slots[0].fuseId : 0;
-        int id1 = slots[1] != null ? slots[1].fuseId : 0;
-        int id2 = slots[2] != null ? slots[2].fuseId : 0;
-        return $"{id0},{id1},{id2}";
-    }
-    #endregion
-
-    #region lógica de combinação
-    private void EvaluateCombination()
-    {
-        string currentKey = GetCurrentKey();
-
-        // se já temos uma combinação ativa diferente -> desativar
-        if (!string.IsNullOrEmpty(activeComboKey) && activeComboKey != currentKey)
-        {
-            var prev = FindComboByKey(activeComboKey);
-            if (prev != null)
-            {
-                Debug.Log($"[FuseBox] Desativando combo anterior {activeComboKey}");
-                prev.onDeactivate?.Invoke();
-                if (audioSource != null && soundComboDeactivate != null) audioSource.PlayOneShot(soundComboDeactivate);
-            }
-            activeComboKey = null;
-        }
-
-        // procura combo que bate exatamente com a chave atual
-        var match = FindComboByKey(currentKey);
-
-        if (match != null)
-        {
-            // se ainda não estava ativa, ativa
-            if (activeComboKey != currentKey)
-            {
-                Debug.Log($"[FuseBox] Ativando combo {currentKey}");
-                match.onActivate?.Invoke();
-                if (audioSource != null && soundComboActivate != null) audioSource.PlayOneShot(soundComboActivate);
-            }
-            activeComboKey = currentKey;
-        }
-        else
-        {
-            // se não bateu nenhuma combinação, garante activeComboKey null (já desativamos acima)
-            activeComboKey = null;
-            Debug.Log($"[FuseBox] Nenhuma combinação ativa ({currentKey})");
-        }
+        if (index < 0 || index >= slots.Length) return false;
+        slots[index] = fuse;
+        if (removeFromInventory && fuse != null) SistemaInventario.instancia?.RemoverItem(fuse, 1);
+        if (fuse == null) onRemoved?.Invoke(); else onPlaced?.Invoke();
+        CheckSolved();
+        return true;
     }
 
-    private ComboEntry FindComboByKey(string key)
-    {
-        foreach (var c in combos)
-        {
-            if (c == null) continue;
-            if (string.Equals(c.Key(), key, StringComparison.Ordinal))
-                return c;
-        }
-        return null;
-    }
-    #endregion
-
-#if UNITY_EDITOR
-    // chama EvaluateCombination no inspector quando algo muda, útil durante setup
-    private void OnValidate()
-    {
-        if (!Application.isPlaying) return;
-        EvaluateCombination();
-    }
-#endif
 }

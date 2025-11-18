@@ -37,20 +37,48 @@ public class InteracaoManager : MonoBehaviour
     private ItemInterativo objetoInterativo;
     private bool mostrandoPopup = false;
 
+    // cache do jogador (GameObject) — tenta encontrar no Start se possível
+    private GameObject jogadorGO;
+
+    private void Start()
+    {
+        if (jogadorCamera == null && Camera.main != null)
+            jogadorCamera = Camera.main.transform;
+        // tenta achar player pela tag (opcional)
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p != null) jogadorGO = p;
+    }
+
     void Update()
     {
         DetectarInteracao();
-        if (Input.GetKeyDown(teclaInteragir)) Interagir();
+
+        // Só processa input de interação se houver um objeto com popup visível
+        if (mostrandoPopup && Input.GetKeyDown(teclaInteragir))
+        {
+            Interagir();
+        }
     }
 
     void DetectarInteracao()
     {
+        if (jogadorCamera == null) return;
+
         Ray ray = new Ray(jogadorCamera.position, jogadorCamera.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, distanciaInteracao, camadaInteracao))
         {
             ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
             if (item != null)
             {
+                // calcula orientação (opcional): garante que o objeto esteja suficientemente no centro da mira
+                float dot = Vector3.Dot(jogadorCamera.forward.normalized, (hit.point - jogadorCamera.position).normalized);
+                if (dot < precisaoOlhar)
+                {
+                    // está fora da área visual "precisa" — tratar como não detectado
+                    if (mostrandoPopup) RemoverPopup();
+                    return;
+                }
+
                 objetoInterativo = item;
                 if (!mostrandoPopup) CriarPopup(item, hit.collider.GetComponent<Renderer>());
                 AtualizarPopup();
@@ -66,8 +94,17 @@ public class InteracaoManager : MonoBehaviour
     {
         if (objetoInterativo == null) return;
 
-        // pega referência do jogador uma vez
-        MovimentaçãoPlayer jogador = jogadorCamera.GetComponent<MovimentaçãoPlayer>();
+        // pega referência do jogador uma vez (fallback para jogadorGO ou a camera)
+        MovimentaçãoPlayer jogador = null;
+        if (jogadorGO == null && jogadorCamera != null)
+        {
+            var camGo = jogadorCamera.gameObject;
+            jogador = camGo.GetComponent<MovimentaçãoPlayer>();
+        }
+        else if (jogadorGO != null)
+        {
+            jogador = jogadorGO.GetComponent<MovimentaçãoPlayer>();
+        }
 
         // 1) detecta se é celular (pela tag)
         bool ehCelular = false;
@@ -87,16 +124,36 @@ public class InteracaoManager : MonoBehaviour
         // 3) captura a PageItem (se houver) ANTES de executar a interação que pode destruir o objeto
         PageItem paginaASerIntegrada = objetoInterativo.itemColetavel as PageItem;
 
-        // 4) se for celular, faz a lógica de desbloqueio/aviso antes da interação
+        // 4) se for celular, faz a lógica de desbloqueio (mantive seu texto narrativo)
         if (ehCelular)
         {
-            InteragirComCelular(objetoInterativo, jogador, true);
+            HUD_Interacao.instancia?.PegarCelular();
+            HUD_Interacao.instancia?.MostrarMensagem("Finalmente, um celular... Talvez eu possa usá-lo para me orientar.");
         }
 
-        // 5) executa a interação normal (pode adicionar ao inventário / destruir o objeto, etc.)
+        // 5) se o objeto tem um FuseboxInteractor, abra a interação em cena (camera se aproxima, trava jogador)
+        FuseboxInteractor fuse = objetoInterativo.GetComponentInParent<FuseboxInteractor>();
+        // Se o objeto interativo pertence a uma caixa de fusíveis, abrir interação in-scene
+        var box = objetoInterativo.GetComponentInParent<CaixadeFusiveis>();
+        if (box != null)
+        {
+            var interactor = box.GetComponent<FuseboxInteractor>();
+            if (interactor != null)
+            {
+                // em vez de passar jogadorCamera.gameObject, passe jogadorGO (o objeto com MovimentaçãoPlayer)
+                if (jogadorGO != null)
+                    interactor.StartInteractionFromPlayer(jogadorGO);
+                else
+                    interactor.StartInteractionFromPlayer(GameObject.FindGameObjectWithTag("Player")); // fallback
+
+            }
+        }
+
+
+        // 6) executa a interação normal (pode adicionar ao inventário / destruir o objeto, etc.)
         objetoInterativo.Interagir(jogador);
 
-        // 6) se era uma PageItem, avisa o HUD para integrar (garante integração mesmo se o objeto de cena foi destruído)
+        // 7) se era uma PageItem, avisa o HUD para integrar (garante integração mesmo se o objeto de cena foi destruído)
         if (paginaASerIntegrada != null)
         {
             if (HUD_Interacao.instancia != null)
@@ -110,26 +167,12 @@ public class InteracaoManager : MonoBehaviour
             }
         }
 
-        // 7) se era diário, executa o tratamento específico (mantive seu fluxo original)
+        // 8) se era diário, executa o tratamento específico (mantive seu fluxo original)
         if (ehDiary)
         {
             TratarInteracaoDiary(objetoInterativo);
         }
 
-        // supondo que objetoInterativo é um ItemInterativo ligado à fusebox (ou que você detectou a FuseBox via collider)
-        CaixadeFusiveis box = objetoInterativo.GetComponentInParent<CaixadeFusiveis>();
-        if (box != null)
-        {
-            // supondo que exista um único FuseBoxUI na cena (arraste via inspector)
-            var ui = FindObjectOfType<UI_CaixadeFusiveis>();
-            if (ui != null)
-            {
-                ui.OpenFor(box);
-            }
-        }
-
-
-        // 8) limpa o popup
         RemoverPopup();
     }
 
@@ -139,7 +182,7 @@ public class InteracaoManager : MonoBehaviour
         if (item == null) return;
 
         HUD_Interacao.instancia?.PegarCelular();
-        HUD_Interacao.instancia?.MostrarMensagem($"Você conseguiu um celular! Use-o a Lanterna dele para iluminar e o bloco de notas para anotar seu proximo passo.");
+        HUD_Interacao.instancia?.MostrarMensagem("Você conseguiu um celular! Use-o com cuidado — a lanterna e o bloco de notas podem salvar sua pele.");
     }
 
     #region InteraçãoDiario
@@ -155,8 +198,8 @@ public class InteracaoManager : MonoBehaviour
 
         HUD_Interacao.instancia?.PegarDiario();
 
-        HUD_Interacao.instancia?.MostrarMensagem("Aparentemente outras pessoas estiveram aqui antes de mim, talvez esse diario me ajude a sair daqui");
-        HUD_Interacao.instancia?.MostrarNotificacao("Diario coletado!", diaryItem != null ? diaryItem.iconeItem : null);
+        HUD_Interacao.instancia?.MostrarMensagem("Há anotações aqui. Algo pode me ajudar a entender o que aconteceu.");
+        HUD_Interacao.instancia?.MostrarNotificacao("Diário coletado!", diaryItem != null ? diaryItem.iconeItem : null);
 
         try
         {
@@ -185,7 +228,11 @@ public class InteracaoManager : MonoBehaviour
         popupTexto = popupInstance.GetComponentInChildren<TMP_Text>();
         popupIcone = popupInstance.GetComponentInChildren<Image>();
 
-        if (popupTexto != null) popupTexto.text = $"Pressione {teclaInteragir} para {item.tipo}";
+        // mensagem no tom do narrador, concisa
+        string narracao = "Existe algo aqui...";
+        if (item != null) narracao = $"Pressione {teclaInteragir} para inspecionar ({item.tipo})";
+
+        if (popupTexto != null) popupTexto.text = narracao;
         if (popupIcone != null)
         {
             popupIcone.sprite = iconeInteracao;
@@ -200,6 +247,7 @@ public class InteracaoManager : MonoBehaviour
             popupInstance.transform.Rotate(0, 180f, 0);
         }
     }
+
     public void RemoverPopup()
     {
         mostrandoPopup = false;
@@ -213,6 +261,7 @@ public class InteracaoManager : MonoBehaviour
         if (objetoRend != null && matOriginal != null) objetoRend.material = matOriginal;
         objetoRend = null;
     }
+
     void AtualizarPopup()
     {
         if (popupInstance == null || objetoInterativo == null) return;
@@ -227,6 +276,7 @@ public class InteracaoManager : MonoBehaviour
             popupInstance.transform.Rotate(0, 180f, 0);
         }
     }
+
     private Vector3 GetTopWorldPosition(GameObject go, float offset)
     {
         // tente Collider primeiro (mais exato para objetos grandes)
@@ -250,26 +300,6 @@ public class InteracaoManager : MonoBehaviour
     }
     #endregion
 
-    #region Fusiveis
-
-    public void PlaceFuseAutomatic(CaixadeFusiveis box, Fusiveis fuse)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            if (box.slots[i] == null)
-            {
-                box.PlaceFuseAtSlot(i, fuse);
-                // opcional: remover do inventário se estava lá
-                SistemaInventario.instancia?.RemoverItem(fuse, 1);
-                return;
-            }
-        }
-        // se não há slot vazio, pode mostrar mensagem
-        HUD_Interacao.instancia?.MostrarMensagem("Caixa cheia: remova um fusível primeiro.");
-    }
-
-    #endregion
-
     void PulsarContorno()
     {
         if (objetoRend == null || materialContorno == null) return;
@@ -285,5 +315,4 @@ public class InteracaoManager : MonoBehaviour
         float t = Mathf.Sin(Time.time * pulsacaoVel) * pulsacaoMagnitude + 0.5f;
         objetoRend.material.Lerp(matOriginal, materialContorno, t);
     }
-
 }

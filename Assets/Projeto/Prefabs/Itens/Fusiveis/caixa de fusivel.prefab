@@ -44,47 +44,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdd5f185872946048a78cd44e99cb029, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetBox: {fileID: 7787871340813922331}
   painelUI: {fileID: 0}
-  slotImages:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  btnRemoveSlot:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  btnSwap01: {fileID: 0}
-  btnSwap12: {fileID: 0}
-  btnFechar: {fileID: 0}
-  cameraPointUI: {fileID: 4926625432345140484}
-  tempoTransicaoCamera: 0.6
-  curvaTransicao:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  playerController: {fileID: 0}
-  spriteVazio: {fileID: 0}
+  slotTexts: []
+  slotIcons: []
+  caixaEmUso: {fileID: 0}
 --- !u!1001 &7268582799398403689
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -154,9 +117,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 514668b2bf3df0c4881a4de99f0da673, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7787871340813922331}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 514668b2bf3df0c4881a4de99f0da673, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 3934418800255714619}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 514668b2bf3df0c4881a4de99f0da673, type: 3}
       insertIndex: -1
@@ -172,59 +132,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 514668b2bf3df0c4881a4de99f0da673, type: 3}
   m_PrefabInstance: {fileID: 7268582799398403689}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7787871340813922331
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7502531174001722168}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e875d563d10f49e4cb20f01be1129b62, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  slots:
-  - {fileID: 11400000, guid: 394479f1a3779bc4faf0b16c7d36ea03, type: 2}
-  - {fileID: 0}
-  - {fileID: 0}
-  combos:
-  - ids: 010000000200000003000000
-    onActivate:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-          m_MethodName: SetActive
-          m_Mode: 6
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 1
-          m_CallState: 1
-    onDeactivate:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-          m_MethodName: SetActive
-          m_Mode: 6
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 1
-  audioSource: {fileID: 0}
-  soundPlace: {fileID: 0}
-  soundRemove: {fileID: 0}
-  soundComboActivate: {fileID: 0}
-  soundComboDeactivate: {fileID: 0}
 --- !u!114 &3934418800255714619
 MonoBehaviour:
   m_ObjectHideFlags: 0

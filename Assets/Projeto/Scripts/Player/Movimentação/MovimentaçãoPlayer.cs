@@ -23,7 +23,6 @@ public class MovimentaçãoPlayer : MonoBehaviour
     [SerializeField] private float intensidadeRotacao = 1.5f;
     [SerializeField] private float velocidadeBob = 6f;
     [SerializeField] private float intensidadeTremor = 0.01f;
-
     private float contadorMovimento;
     private Vector3 posicaoInicialCamera;
     private Quaternion rotacaoInicialCamera;
@@ -51,8 +50,11 @@ public class MovimentaçãoPlayer : MonoBehaviour
     private Rigidbody RB;
     private bool isGrounded = true;
 
-    private bool movimentoHabilitado = true; 
-    private bool rotacaoHabilitada = true;   
+    private bool movimentoHabilitado = true;
+    private bool rotacaoHabilitada = true;
+
+    // NOVO: controle global da lógica de câmera (rotacao/headbob/altura)
+    private bool cameraControlEnabled = true;
 
     private void Start()
     {
@@ -83,9 +85,9 @@ public class MovimentaçãoPlayer : MonoBehaviour
     #region Headbob
     private void HeadbobAvancado()
     {
-        if (!isGrounded || cameraReferencia == null) return;
+        // respeita bloqueio de câmera
+        if (!isGrounded || cameraReferencia == null || !cameraControlEnabled) return;
 
-        // Velocidade horizontal do jogador
         Vector3 horizontalVel = new Vector3(RB.linearVelocity.x, 0, RB.linearVelocity.z);
         float velocidadeAtual = horizontalVel.magnitude;
 
@@ -93,12 +95,10 @@ public class MovimentaçãoPlayer : MonoBehaviour
         {
             contadorMovimento += Time.deltaTime * velocidadeBob;
 
-            // Offset vertical e lateral
             float offsetY = Mathf.Sin(contadorMovimento) * intensidadeVertical;
             float offsetX = Mathf.Cos(contadorMovimento * 0.5f) * intensidadeHorizontal;
             float rotZ = Mathf.Sin(contadorMovimento * 0.5f) * intensidadeRotacao;
 
-            // Micro-tremor
             Vector3 tremor = Vector3.zero;
             if ((Input.GetKey(KeyCode.LeftShift) && !isCrouching) || isCansado)
             {
@@ -106,14 +106,12 @@ public class MovimentaçãoPlayer : MonoBehaviour
                 tremor.y = Random.Range(-intensidadeTremor, intensidadeTremor);
             }
 
-            // Aplica suavemente posição e rotação
             Vector3 targetPos = posicaoInicialCamera + new Vector3(offsetX, offsetY, 0) + tremor;
             cameraReferencia.localPosition = Vector3.Lerp(cameraReferencia.localPosition, targetPos, Time.deltaTime * 10f);
 
             Quaternion targetRot = rotacaoInicialCamera * Quaternion.Euler(0, 0, rotZ);
             cameraReferencia.localRotation = Quaternion.Slerp(cameraReferencia.localRotation, targetRot, Time.deltaTime * 10f);
 
-            // Som de passo
             if (!passoTocado && offsetY > intensidadeVertical * 0.8f)
             {
                 TocarSomPasso();
@@ -145,8 +143,8 @@ public class MovimentaçãoPlayer : MonoBehaviour
     #region Movimento e câmera
     private void RotacaoMouse()
     {
-        // Respeita controle de rotação (Locker usará SetCanRotate)
-        if (!rotacaoHabilitada) return;
+        // respeita controle de rotação e bloqueio global de câmera
+        if (!rotacaoHabilitada || !cameraControlEnabled) return;
 
         float mouseX = Input.GetAxis("Mouse X") * MouseSensibilidade;
         transform.Rotate(Vector3.up * mouseX);
@@ -160,18 +158,14 @@ public class MovimentaçãoPlayer : MonoBehaviour
 
     private void PuloAgachar()
     {
-        //if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
-        //{
-        //    RB.AddForce(Vector3.up * PuloForca, ForceMode.Impulse);
-        //    isGrounded = false;
-        //}
-
         if (Input.GetKeyDown(KeyCode.LeftControl))
             isCrouching = !isCrouching;
     }
 
     private void AlturaCamera()
     {
+        if (!cameraControlEnabled) return;
+
         float targetHeight = isCrouching ? AlturaAgachado : AlturaEmPé;
         Vector3 cameraPos = cameraReferencia.localPosition;
         cameraPos.y = Mathf.Lerp(cameraPos.y, targetHeight, Time.deltaTime * VelocidadeTransição);
@@ -237,21 +231,7 @@ public class MovimentaçãoPlayer : MonoBehaviour
     #endregion
 
     #region Interação
-    // private void DetectarInteracao()
-    // {
-    //     if (Input.GetKeyDown(teclaInteragir))
-    //     {
-    //         Debug.DrawRay(cameraReferencia.position, cameraReferencia.forward * alcanceInteracao, Color.red, 1f);
-    //         Ray ray = new Ray(cameraReferencia.position, cameraReferencia.forward);
-    //
-    //         if (Physics.Raycast(ray, out RaycastHit hit, alcanceInteracao, LayerMask.GetMask("Interagir")))
-    //         {
-    //             ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
-    //             if (item != null)
-    //                 item.Interagir(this);
-    //         }
-    //     }
-    // }
+    // (mantido comentado)
     #endregion
 
     #region API pública para outros scripts (Locker, HUD, etc.)
@@ -261,42 +241,43 @@ public class MovimentaçãoPlayer : MonoBehaviour
 
         if (!canMove && RB != null)
         {
-            // zera velocidade residual para não "deslizar" para dentro do locker
             RB.linearVelocity = Vector3.zero;
             RB.angularVelocity = Vector3.zero;
         }
     }
-
-
 
     public void SetCanRotate(bool canRotate)
     {
         rotacaoHabilitada = canRotate;
     }
 
-   public void SetBodyVisible(bool visible)
-{
-    int count = 0;
-    // pega todos os tipos de renderer (MeshRenderer, SkinnedMeshRenderer...)
-    var renders = GetComponentsInChildren<Renderer>(true);
-    foreach (var r in renders)
+    public void SetBodyVisible(bool visible)
     {
-        // evita desligar a própria câmera se ela tiver renderer (normalmente não tem)
-        if (cameraReferencia != null && r.gameObject == cameraReferencia.gameObject)
-            continue;
-
-        // se você tiver objetos que NÃO quer esconder, marque-os com tag "KeepVisible"
-        if (r.gameObject.CompareTag("KeepVisible")) continue;
-
-        r.enabled = visible;
-        count++;
+        Renderer[] rends = GetComponentsInChildren<Renderer>(true);
+        int count = 0;
+        foreach (var r in rends)
+        {
+            if (cameraReferencia != null && r.gameObject == cameraReferencia.gameObject) continue;
+            r.enabled = visible;
+            count++;
+        }
+        Debug.Log($"[MovimentaçãoPlayer] SetBodyVisible({visible}) — renderers afetados: {count}");
     }
-    Debug.Log($"[MovimentaçãoPlayer] SetBodyVisible({visible}) — renderers afetados: {count}");
-}
 
-
-
-
+    /// <summary>
+    /// Bloqueia/permite que o MovimentaçãoPlayer atualize a câmera (rotacao, headbob, altura).
+    /// Use para interações que movem a câmera por cena (lockers, puzzles, etc.).
+    /// </summary>
+    public void SetCameraControl(bool enable)
+    {
+        cameraControlEnabled = enable;
+        if (!enable && cameraReferencia != null)
+        {
+            // assegura que as referências iniciais não causem jumps enquanto interação está ativa
+            posicaoInicialCamera = cameraReferencia.localPosition;
+            rotacaoInicialCamera = cameraReferencia.localRotation;
+        }
+    }
     #endregion
 
     public float GetCurrentStamina() => EstaminaAtual;
