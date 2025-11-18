@@ -131,8 +131,6 @@ public class InteracaoManager : MonoBehaviour
         }
 
         // 5) se o objeto tem um FuseboxInteractor, abra a interação em cena (camera se aproxima, trava jogador)
-        FuseboxInteractor fuse = objetoInterativo.GetComponentInParent<FuseboxInteractor>();
-        // Se o objeto interativo pertence a uma caixa de fusíveis, abrir interação in-scene
         var box = objetoInterativo.GetComponentInParent<CaixadeFusiveis>();
         if (box != null)
         {
@@ -144,15 +142,22 @@ public class InteracaoManager : MonoBehaviour
                     interactor.StartInteractionFromPlayer(jogadorGO);
                 else
                     interactor.StartInteractionFromPlayer(GameObject.FindGameObjectWithTag("Player")); // fallback
-
             }
         }
 
+        // 6) Se for manequim: chamar o Interact do MannequinInteractor e sair (só ele gerencia pegar partes da inventory).
+        var mannequin = objetoInterativo.GetComponentInParent<MannequinInteractor>();
+        if (mannequin != null)
+        {
+            mannequin.Interact(jogador);
+            RemoverPopup();
+            return; // evita fluxo padrão para manequim
+        }
 
-        // 6) executa a interação normal (pode adicionar ao inventário / destruir o objeto, etc.)
+        // 7) executa a interação normal (pode adicionar ao inventário / destruir o objeto, etc.)
         objetoInterativo.Interagir(jogador);
 
-        // 7) se era uma PageItem, avisa o HUD para integrar (garante integração mesmo se o objeto de cena foi destruído)
+        // 8) se era uma PageItem, avisa o HUD para integrar (garante integração mesmo se o objeto de cena foi destruído)
         if (paginaASerIntegrada != null)
         {
             if (HUD_Interacao.instancia != null)
@@ -166,7 +171,7 @@ public class InteracaoManager : MonoBehaviour
             }
         }
 
-        // 8) se era diário, executa o tratamento específico (mantive seu fluxo original)
+        // 9) se era diário, executa o tratamento específico (mantive seu fluxo original)
         if (ehDiary)
         {
             TratarInteracaoDiary(objetoInterativo);
