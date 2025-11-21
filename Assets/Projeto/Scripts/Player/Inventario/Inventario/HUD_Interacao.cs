@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -32,9 +33,9 @@ public class HUD_Interacao : MonoBehaviour
     private bool lanternaLigada = false;
 
     [Header("HUD do Diario")]
-    public GameObject painelDiario;   
-    public TMP_Text textoPaginaUI;    
-    public Image imagemPaginaUI;      
+    public GameObject painelDiario;
+    public TMP_Text textoPaginaUI;
+    public Image imagemPaginaUI;
     public TMP_Text indicadorPaginaUI;
     public Button botaoAnterior;
     public Button botaoProximo;
@@ -53,15 +54,18 @@ public class HUD_Interacao : MonoBehaviour
     public AnimationCurve curvaFolheado = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     [Header("Capa do Diário")]
-    public Canvas capaCanvas;             
-    public TMP_Text capaTexto;            
+    public Canvas capaCanvas;
+    public TMP_Text capaTexto;
     public string Titulo = "Diário de Sobrevivencia";
-    public float duracaoCapa = 0.8f;  
+    public float duracaoCapa = 0.8f;
     public float fadeInCapa = 0.12f;
     public float fadeOutCapa = 0.18f;
     public float scalePunch = 0.06f;
     public GameObject conteudoPaginas;
-    public AudioClip somAbrirCapa;    
+    public AudioClip somAbrirCapa;
+
+    [Header("Bloco de Notas - Quests")]
+    [SerializeField] private TMP_Text notasQuestsText; 
 
     [Header("Gerais")]
     [SerializeField] private GameObject HUD_Celular;
@@ -74,7 +78,7 @@ public class HUD_Interacao : MonoBehaviour
 
     [SerializeField] private bool temCelular = false;
 
-    // Di�rio
+    // Diário
     private bool desbloqueado = false;
     private int paginaAtual = 1;
     private bool isAnimating = false;
@@ -90,6 +94,9 @@ public class HUD_Interacao : MonoBehaviour
 
     private readonly Queue<(string texto, Sprite imagem)> filaNotificacoes = new Queue<(string, Sprite)>();
     private readonly Dictionary<int, PageItem> paginasColetadas = new Dictionary<int, PageItem>();
+
+    // Guarda as quests que aparecem no bloco de notas (questSO -> QuestEntry)
+    private readonly Dictionary<QuestSO, QuestEntry> questsNoBloco = new Dictionary<QuestSO, QuestEntry>();
 
     private Coroutine processadorFila;
 
@@ -111,14 +118,51 @@ public class HUD_Interacao : MonoBehaviour
         InicializarLanternaUI();
         InicializarDiario();
     }
-
+    private void OnEnable()
+    {
+        // Inscreve-se nos eventos do QuestManager para atualizar o bloco de notas
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.OnQuestAdded += HandleQuestAdded;
+            QuestManager.Instance.OnQuestCompleted += HandleQuestCompleted;
+        }
+    }
+    private void OnDisable()
+    {
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.OnQuestAdded -= HandleQuestAdded;
+            QuestManager.Instance.OnQuestCompleted -= HandleQuestCompleted;
+        }
+    }
     private void Start()
     {
-        // Start pode ficar vazio ou usar para validar referencias
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.OnQuestAdded -= HandleQuestAdded;
+            QuestManager.Instance.OnQuestCompleted -= HandleQuestCompleted;
+
+            QuestManager.Instance.OnQuestAdded += HandleQuestAdded;
+            QuestManager.Instance.OnQuestCompleted += HandleQuestCompleted;
+
+            Debug.Log("[HUD] Subscribed to QuestManager events in Start()");
+
+            var active = QuestManager.Instance.GetActiveQuests();
+            if (active != null && active.Count > 0)
+            {
+                Debug.Log("[HUD] Sincronizando quests ativas: count=" + active.Count);
+                foreach (var e in active) HandleQuestAdded(e);
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[HUD] QuestManager.Instance is NULL in Start()");
+        }
+
+        Debug.Log("[HUD] notasQuestsText = " + (notasQuestsText == null ? "NULL" : "OK"));
     }
 
     #region Inicializadores
-
     private void InicializarMensagensENotificacoes()
     {
         if (caixaMensagem != null)
@@ -271,7 +315,6 @@ public class HUD_Interacao : MonoBehaviour
         StopCoroutineSafe(nameof(MostrarMensagemCoroutine));
         StartCoroutine(MostrarMensagemCoroutine(texto));
     }
-
     private IEnumerator MostrarMensagemCoroutine(string texto)
     {
         textoMensagem.text = texto;
@@ -297,7 +340,7 @@ public class HUD_Interacao : MonoBehaviour
     }
     #endregion
 
-    #region Notifica��es com subida suave e fade-out
+    #region Notificações com subida suave e fade-out
     public void MostrarNotificacao(string texto, Sprite imagem)
     {
         if (string.IsNullOrEmpty(texto) && imagem == null) return;
@@ -305,7 +348,6 @@ public class HUD_Interacao : MonoBehaviour
         if (processadorFila == null)
             processadorFila = StartCoroutine(ProcessarFilaNotificacoes());
     }
-
     private IEnumerator ProcessarFilaNotificacoes()
     {
         if (caixaNotificacao == null || textoNotificacao == null || cgNotificacao == null)
@@ -367,7 +409,6 @@ public class HUD_Interacao : MonoBehaviour
     #endregion
 
     #region FuncoesCelular
-
     public void PegarCelular()
     {
         if (temCelular) return;
@@ -392,7 +433,7 @@ public class HUD_Interacao : MonoBehaviour
             BloqueioAoAbrirCelularDiario(HUDativa);
         }
     }
-    private void BloqueioAoAbrirCelularDiario (bool bloquear)
+    private void BloqueioAoAbrirCelularDiario(bool bloquear)
     {
         bloqueadoPorHUD = bloquear;
 
@@ -438,7 +479,6 @@ public class HUD_Interacao : MonoBehaviour
         if (audioSource != null && somLanterna != null)
             audioSource.PlayOneShot(somLanterna);
     }
-
     public void AbrirBlocodeNotas()
     {
         if (HUD_blocodenotas == null || HUD_Celular == null) return;
@@ -457,11 +497,77 @@ public class HUD_Interacao : MonoBehaviour
 
         BloqueioAoAbrirCelularDiario(false);
     }
+    private void HandleQuestAdded(QuestEntry entry)
+    {
+        Debug.Log("[HUD] HandleQuestAdded called for: " + (entry?.quest?.name ?? "NULL"));
+        if (entry == null || entry.quest == null) return;
+        if (!questsNoBloco.ContainsKey(entry.quest))
+            questsNoBloco.Add(entry.quest, entry);
+        RefreshNotasQuestsUI();
+    }
+    private void HandleQuestCompleted(QuestEntry entry)
+    {
+        Debug.Log("[HUD] HandleQuestCompleted called for: " + (entry?.quest?.name ?? "NULL"));
+        if (entry == null || entry.quest == null) return;
+        if (questsNoBloco.ContainsKey(entry.quest))
+            questsNoBloco[entry.quest] = entry;
+        RefreshNotasQuestsUI();
+    }
+    private void RefreshNotasQuestsUI()
+    {
+        if (notasQuestsText == null)
+        {
+            Debug.LogWarning("[HUD] RefreshNotasQuestsUI: notasQuestsText == NULL");
+            return;
+        }
 
+        var list = new List<QuestEntry>(questsNoBloco.Values);
+        list.Sort((a, b) => a.addedTime.CompareTo(b.addedTime));
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        foreach (var e in list)
+        {
+            if (e == null || e.quest == null) continue;
+
+            string tipoLabel;
+            switch (e.quest.tipo)
+            {
+                case QuestType.Principal: tipoLabel = "Principal"; break;
+                case QuestType.Ramificacao: tipoLabel = "Ramificação"; break;
+                case QuestType.Secundaria: tipoLabel = "Secundária"; break;
+                default: tipoLabel = "Outro"; break;
+            }
+
+            string descricao = string.IsNullOrEmpty(e.quest.descricao) ? "" : e.quest.descricao.Trim();
+
+            // Exibe só o tipo + quebra de linha + descrição (sem indent)
+            if (e.completed)
+            {
+                sb.AppendLine($"<s>[{tipoLabel}]</s>");
+                if (!string.IsNullOrEmpty(descricao))
+                    sb.AppendLine($"<s>{descricao}</s>");
+            }
+            else
+            {
+                sb.AppendLine($"[{tipoLabel}]");
+                if (!string.IsNullOrEmpty(descricao))
+                    sb.AppendLine(descricao);
+            }
+
+            sb.AppendLine(); // separador entre quests
+        }
+
+        notasQuestsText.text = sb.ToString();
+
+        // Força rebuild do layout (útil se estiver dentro de LayoutGroups / Content Size Fitters)
+        var rt = notasQuestsText.GetComponent<RectTransform>();
+        if (rt != null)
+            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+    }
     #endregion
 
     #region FuncoesDiario
-
     public void AbrirFecharDiario()
     {
         if (painelDiario == null) return;
@@ -562,7 +668,7 @@ public class HUD_Interacao : MonoBehaviour
                     if (audioSourceDiario != null && somColetaPagina != null)
                         audioSourceDiario.PlayOneShot(somColetaPagina);
 
-                    MostrarNotificacao($"Página {p.numeroPagina} coletada. Pagina { p.numeroPagina} Foi adicionada ao Diario", p.iconeItem);
+                    MostrarNotificacao($"Página {p.numeroPagina} coletada. Pagina {p.numeroPagina} Foi adicionada ao Diario", p.iconeItem);
 
                     SistemaInventario.instancia?.RemoverItem(p, 1);
 
@@ -638,11 +744,11 @@ public class HUD_Interacao : MonoBehaviour
         if (painelDiario == null) return;
 
         if (indicadorPaginaUI != null)
-            indicadorPaginaUI.text = $"P�gina {paginaAtual} / {totalPages}";
+            indicadorPaginaUI.text = $"Página {paginaAtual} / {totalPages}";
 
         if (paginasColetadas.TryGetValue(paginaAtual, out PageItem page))
         {
-            if (textoPaginaUI != null) textoPaginaUI.text = string.IsNullOrEmpty(page.textoPagina) ? "<P�gina vazia>" : page.textoPagina;
+            if (textoPaginaUI != null) textoPaginaUI.text = string.IsNullOrEmpty(page.textoPagina) ? "<Página vazia>" : page.textoPagina;
             if (imagemPaginaUI != null)
             {
                 imagemPaginaUI.sprite = page.imagemPagina;
@@ -651,7 +757,7 @@ public class HUD_Interacao : MonoBehaviour
         }
         else
         {
-            if (textoPaginaUI != null) textoPaginaUI.text = "<P�gina n�o coletada>";
+            if (textoPaginaUI != null) textoPaginaUI.text = "<Página não coletada>";
             if (imagemPaginaUI != null)
             {
                 imagemPaginaUI.sprite = null;

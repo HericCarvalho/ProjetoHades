@@ -37,40 +37,39 @@ public class InteracaoManager : MonoBehaviour
     private ItemInterativo objetoInterativo;
     private bool mostrandoPopup = false;
 
-    // cache do jogador (GameObject) — tenta encontrar no Start se possível
     private GameObject jogadorGO;
 
     private void Start()
     {
         if (jogadorCamera == null && Camera.main != null)
             jogadorCamera = Camera.main.transform;
-        // tenta achar player pela tag (opcional)
+
         var p = GameObject.FindGameObjectWithTag("Player");
         if (p != null) jogadorGO = p;
     }
 
-    void Update()
+    private void Update()
     {
         DetectarInteracao();
 
-        // Só processa input de interação se houver um objeto com popup visível
         if (mostrandoPopup && Input.GetKeyDown(teclaInteragir))
         {
             Interagir();
         }
     }
 
-    void DetectarInteracao()
+    private void DetectarInteracao()
     {
         if (jogadorCamera == null) return;
 
         Ray ray = new Ray(jogadorCamera.position, jogadorCamera.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, distanciaInteracao, camadaInteracao))
         {
-            ItemInterativo item = hit.collider.GetComponent<ItemInterativo>();
+            // tenta obter ItemInterativo a partir do collider tocado (suporta múltiplos colliders por objeto)
+            ItemInterativo item = hit.collider.GetComponentInParent<ItemInterativo>();
             if (item != null)
             {
-                // garante que o objeto esteja suficientemente no centro da mira
+                // garante que o ponto atingido esteja próximo do centro do olhar
                 float dot = Vector3.Dot(jogadorCamera.forward.normalized, (hit.point - jogadorCamera.position).normalized);
                 if (dot < precisaoOlhar)
                 {
@@ -86,14 +85,15 @@ public class InteracaoManager : MonoBehaviour
             }
         }
 
+        // nada detectado -> remove popup se estava mostrando
         if (mostrandoPopup) RemoverPopup();
     }
 
-    void Interagir()
+    private void Interagir()
     {
         if (objetoInterativo == null) return;
 
-        // pega referência do jogador uma vez (fallback para jogadorGO ou a camera)
+        // pega referência do MovimentaçãoPlayer (fallbacks)
         MovimentaçãoPlayer jogador = null;
         if (jogadorGO == null && jogadorCamera != null)
         {
@@ -105,65 +105,65 @@ public class InteracaoManager : MonoBehaviour
             jogador = jogadorGO.GetComponent<MovimentaçãoPlayer>();
         }
 
-        // 1) detecta se é celular (pela tag)
-        bool ehCelular = false;
-        if (!string.IsNullOrEmpty(tagCelular) && objetoInterativo.gameObject.CompareTag(tagCelular))
-            ehCelular = true;
+        // detectar celular/diário (para textos/efeitos)
+        bool ehCelular = !string.IsNullOrEmpty(tagCelular) && objetoInterativo.gameObject.CompareTag(tagCelular);
+        bool ehDiary = (!string.IsNullOrEmpty(tagDiary) && objetoInterativo.gameObject.CompareTag(tagDiary)) ||
+                       (!string.IsNullOrEmpty(nomeItemDiary) && objetoInterativo.itemColetavel != null && objetoInterativo.itemColetavel.nomeItem == nomeItemDiary);
 
-        // 2) detecta se é diário (pela tag ou pelo nome do item coletável)
-        bool ehDiary = false;
-        if (!string.IsNullOrEmpty(tagDiary) && objetoInterativo.gameObject.CompareTag(tagDiary))
-            ehDiary = true;
-        else if (!ehDiary && !string.IsNullOrEmpty(nomeItemDiary) && objetoInterativo.itemColetavel != null)
-        {
-            if (objetoInterativo.itemColetavel.nomeItem == nomeItemDiary)
-                ehDiary = true;
-        }
-
-        // 3) captura a PageItem (se houver) ANTES de executar a interação que pode destruir o objeto
+        // captura PageItem antes de possivelmente destruir o objeto
         PageItem paginaASerIntegrada = objetoInterativo.itemColetavel as PageItem;
 
-        // 4) se for celular, faz a lógica de desbloqueio (mantive seu texto narrativo)
+        // celular
         if (ehCelular)
         {
             HUD_Interacao.instancia?.PegarCelular();
             HUD_Interacao.instancia?.MostrarMensagem("Finalmente, um celular... Talvez eu possa usá-lo para me orientar.");
         }
 
-        // 5) se o objeto tem um FuseboxInteractor, abra a interação em cena (camera se aproxima, trava jogador)
+        // se for caixa de fusíveis — abre interação in-scene
         var box = objetoInterativo.GetComponentInParent<CaixadeFusiveis>();
         if (box != null)
         {
             var interactor = box.GetComponent<FuseboxInteractor>();
             if (interactor != null)
             {
-                // em vez de passar jogadorCamera.gameObject, passe jogadorGO (o objeto com MovimentaçãoPlayer)
+                // prefira passar o GameObject do jogador (com MovimentaçãoPlayer) — fallback ao encontrar pela tag
                 if (jogadorGO != null)
                     interactor.StartInteractionFromPlayer(jogadorGO);
                 else
-                    interactor.StartInteractionFromPlayer(GameObject.FindGameObjectWithTag("Player")); // fallback
+                {
+                    var fallback = GameObject.FindGameObjectWithTag("Player");
+                    if (fallback != null) interactor.StartInteractionFromPlayer(fallback);
+                    else interactor.StartInteractionFromPlayer(null);
+                }
+
+                // fecha popup porque entramos no modo de interação in-scene
+                RemoverPopup();
+                return; // evita executar interação padrão sobre o mesmo objeto
             }
         }
 
-        // 6) Se for manequim: chamar o Interact do MannequinInteractor e sair (só ele gerencia pegar partes da inventory).
+        // se for manequim — delega toda lógica ao MannequinInteractor (ele lida com inventário/encaixe/coleta)
         var mannequin = objetoInterativo.GetComponentInParent<MannequinInteractor>();
         if (mannequin != null)
         {
             mannequin.Interact(jogador);
             RemoverPopup();
-            return; // evita fluxo padrão para manequim
+            return; // evita fluxo padrão
         }
 
-        // 7) executa a interação normal (pode adicionar ao inventário / destruir o objeto, etc.)
         objetoInterativo.Interagir(jogador);
 
-        // 8) se era uma PageItem, avisa o HUD para integrar (garante integração mesmo se o objeto de cena foi destruído)
+        var giver = objetoInterativo.GetComponentInParent<QuestGiver>();
+        if (giver != null) giver.TryGive();
+
+        // se era PageItem, integra ao HUD (independente do que a interação fez)
         if (paginaASerIntegrada != null)
         {
             if (HUD_Interacao.instancia != null)
             {
                 HUD_Interacao.instancia.IntegrarPagina(paginaASerIntegrada);
-                Debug.Log($"[InteracaoManager] Pediu integração da página #{paginaASerIntegrada.numeroPagina}");
+                Debug.Log($"[InteracaoManager] Integrei página #{paginaASerIntegrada.numeroPagina}");
             }
             else
             {
@@ -171,7 +171,7 @@ public class InteracaoManager : MonoBehaviour
             }
         }
 
-        // 9) se era diário, executa o tratamento específico (mantive seu fluxo original)
+        // diário
         if (ehDiary)
         {
             TratarInteracaoDiary(objetoInterativo);
@@ -180,60 +180,40 @@ public class InteracaoManager : MonoBehaviour
         RemoverPopup();
     }
 
-
-    private void InteragirComCelular(ItemInterativo item, MovimentaçãoPlayer jogador, bool abrirImediatamente = true)
-    {
-        if (item == null) return;
-
-        HUD_Interacao.instancia?.PegarCelular();
-        HUD_Interacao.instancia?.MostrarMensagem("Você conseguiu um celular! Use-o com cuidado — a lanterna e o bloco de notas podem salvar sua pele.");
-    }
-
-    #region InteraçãoDiario
-
     private void TratarInteracaoDiary(ItemInterativo item)
     {
         if (item == null) return;
 
         if (diaryItem != null)
-        {
             SistemaInventario.instancia?.AdicionarItem(diaryItem, 1);
-        }
 
         HUD_Interacao.instancia?.PegarDiario();
-
         HUD_Interacao.instancia?.MostrarMensagem("Há anotações aqui. Algo pode me ajudar a entender o que aconteceu.");
         HUD_Interacao.instancia?.MostrarNotificacao("Diário coletado!", diaryItem != null ? diaryItem.iconeItem : null);
 
         try
         {
             if (item != null && item.gameObject != null)
-            {
                 Destroy(item.gameObject);
-            }
         }
-        catch { /* defensivo */ }
+        catch { }
     }
 
-    #endregion
-
     #region PopUp
-    void CriarPopup(ItemInterativo item, Renderer rend, Vector3 hitPoint, Vector3 hitNormal)
+
+    private void CriarPopup(ItemInterativo item, Renderer rend, Vector3 hitPoint, Vector3 hitNormal)
     {
         mostrandoPopup = true;
         objetoRend = rend;
         matOriginal = rend != null ? rend.material : null;
 
-        // primeiro, tenta detectar um anchor customizado (ex: DoorInteractable.popupAnchor)
+        // procura anchor customizado (porta, popup anchor, etc.)
         Transform customAnchor = null;
         DoorInteractable door = item.GetComponentInParent<DoorInteractable>();
         if (door != null && door.popupAnchor != null)
-        {
             customAnchor = door.popupAnchor;
-        }
         else
         {
-            // também checa se o ItemInterativo tem uma referência opcional (se você a adicionar)
             var itemAnchor = item.GetComponentInParent<PopupAnchor>();
             if (itemAnchor != null && itemAnchor.anchor != null)
                 customAnchor = itemAnchor.anchor;
@@ -242,17 +222,15 @@ public class InteracaoManager : MonoBehaviour
         Vector3 worldPos;
         if (customAnchor != null)
         {
-            // usa a posição do anchor (permite colocar o pivot manualmente no prefab)
-            worldPos = customAnchor.position + Vector3.up * 0.05f; // pequeno uplift para segurança
+            worldPos = customAnchor.position + Vector3.up * 0.05f; // pequeno uplift
         }
         else
         {
-            // usa o ponto de impacto e desloca para fora da superfície pela normal do hit
-            float outwardOffset = 0.25f; // quanto afastar do objeto (ajuste se necessário)
+            // desloca um pouco para fora pela normal do hit e um pouco para frente do objeto
+            float outwardOffset = 0.25f;
             worldPos = hitPoint + hitNormal.normalized * outwardOffset + Vector3.up * alturaPopup;
         }
 
-        // instancia sem parent (world space)
         popupInstance = Instantiate(prefabPopup, worldPos, Quaternion.identity);
         popupTexto = popupInstance.GetComponentInChildren<TMP_Text>();
         popupIcone = popupInstance.GetComponentInChildren<Image>();
@@ -268,13 +246,14 @@ public class InteracaoManager : MonoBehaviour
             popupIcone.preserveAspect = true;
         }
 
-        // garante que o popup sempre olhe para a câmera do jogador imediatamente
+        // garantir que el popup fique legível (vira para camera)
         if (jogadorCamera != null)
         {
             popupInstance.transform.LookAt(jogadorCamera);
             popupInstance.transform.Rotate(0, 180f, 0);
         }
     }
+
     public void RemoverPopup()
     {
         mostrandoPopup = false;
@@ -289,14 +268,12 @@ public class InteracaoManager : MonoBehaviour
         objetoRend = null;
     }
 
-    void AtualizarPopup()
+    private void AtualizarPopup()
     {
         if (popupInstance == null || objetoInterativo == null) return;
 
-        // reposiciona com base nos bounds (evita popup "entrar" no locker)
         popupInstance.transform.position = GetTopWorldPosition(objetoInterativo.gameObject, alturaPopup);
 
-        // sempre virar para a câmera
         if (jogadorCamera != null)
         {
             popupInstance.transform.LookAt(jogadorCamera);
@@ -304,35 +281,35 @@ public class InteracaoManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Determina posição ideal do popup:
+    /// - se ItemInterativo tiver interactionPoint (ou popupOffset), usa;
+    /// - senão calcula top bounds e aplica pequeno deslocamento para frente do objeto (reduz popups "dentro" da parede).
+    /// </summary>
     private Vector3 GetTopWorldPosition(GameObject go, float offset)
     {
-        // 1) Se o objeto tem ItemInterativo com interactionPoint definido, use esse ponto (muito preciso)
         ItemInterativo ii = go.GetComponent<ItemInterativo>();
         if (ii != null && ii.interactionPoint != null)
         {
             Vector3 world = ii.interactionPoint.position;
-            // aplica offset local (transforma de local para world)
             if (ii.interactionPoint != null && ii.popupOffset != Vector3.zero)
                 world += ii.interactionPoint.TransformVector(ii.popupOffset);
             return world;
         }
 
-        // 2) Caso contrário, tenta Collider primeiro (mais exato para objetos grandes)
         Collider col = go.GetComponent<Collider>();
         if (col != null)
         {
             Bounds b = col.bounds;
             Vector3 top = b.center + Vector3.up * (b.extents.y + offset);
 
-            // deslocamento para frente: usa a forward do próprio objeto (reduz chances de popup "entrar" na parede)
             Vector3 forward = go.transform.forward;
-            float forwardOffset = Mathf.Max(0.15f, offset * 0.5f); // ajuste fino: 0.15m mínimo
+            float forwardOffset = Mathf.Max(0.15f, offset * 0.5f);
             Vector3 forwardShift = forward.normalized * forwardOffset;
 
             return top + forwardShift;
         }
 
-        // 3) Fallback para Renderer bounds (se tiver)
         Renderer r = go.GetComponentInChildren<Renderer>();
         if (r != null)
         {
@@ -346,7 +323,6 @@ public class InteracaoManager : MonoBehaviour
             return top + forwardShift;
         }
 
-        // 4) fallback final: posição do transform + offset + pequeno forward
         Vector3 basePos = go.transform.position + Vector3.up * offset;
         basePos += go.transform.forward * 0.15f;
         return basePos;
@@ -354,11 +330,10 @@ public class InteracaoManager : MonoBehaviour
 
     #endregion
 
-    void PulsarContorno()
+    private void PulsarContorno()
     {
         if (objetoRend == null || materialContorno == null) return;
 
-        // ignora se o objeto interativo (ou seu root) estiver marcado para não ter outline
         if (objetoInterativo != null)
         {
             Transform root = objetoInterativo.transform;

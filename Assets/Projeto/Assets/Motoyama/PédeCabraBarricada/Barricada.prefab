@@ -1,0 +1,166 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4185349394194487592
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3557432169497068434}
+  - component: {fileID: 500271333178117175}
+  - component: {fileID: 2383993449955490045}
+  - component: {fileID: 8167743268353592017}
+  - component: {fileID: -2196874120142863522}
+  - component: {fileID: 4346934213033776821}
+  m_Layer: 6
+  m_Name: Barricada
+  m_TagString: SemOutline
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &3557432169497068434
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4185349394194487592}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.46933287, y: -0.46933287, z: -0.528892, w: 0.528892}
+  m_LocalPosition: {x: -35.34269, y: 30.0868, z: 9.925205}
+  m_LocalScale: {x: 33.35615, y: 33.356155, z: 33.35615}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: -83.171, y: 0, z: -90}
+--- !u!33 &500271333178117175
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4185349394194487592}
+  m_Mesh: {fileID: -8678823145569952518, guid: fd2ad070a3ebc3946b489b1a7f903526, type: 3}
+--- !u!23 &2383993449955490045
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4185349394194487592}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: -876546973899608171, guid: fd2ad070a3ebc3946b489b1a7f903526, type: 3}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8167743268353592017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4185349394194487592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e385452a1d5e8047994fcd3f68a5fa8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  requiredPryBarItem: {fileID: 11400000, guid: b9acc840d5489b84e8ba8316f879265c, type: 2}
+  consumePryBarOnUse: 0
+  msgHint: "Est\xE1 tudo pregado com t\xE1buas. Parece que precisa de algo para arranc\xE1-las."
+  msgBreak: "Um p\xE9 de Cabra resolve muitos problemas"
+  breakSound: {fileID: 0}
+  breakVFXPrefab: {fileID: 0}
+  vfxSpawnPoint: {fileID: 0}
+  destroyOnBreak: 1
+  partsToDisable: []
+--- !u!65 &-2196874120142863522
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4185349394194487592}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.1, y: 0.02, z: 0.05}
+  m_Center: {x: 0, y: 0, z: 0.017}
+--- !u!114 &4346934213033776821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4185349394194487592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b3953a1a661d8848a91030776490823, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tipo: 1
+  descricao: 
+  somColeta: {fileID: 0}
+  itemColetavel: {fileID: 0}
+  interactionPoint: {fileID: 0}
+  popupOffset: {x: 0, y: 0, z: 0}
+  onInteragir:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 8167743268353592017}
+        m_TargetAssemblyTypeName: BoardsInteractable, Assembly-CSharp
+        m_MethodName: Interact
+        m_Mode: 2
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: "Movimenta\xE7\xE3oPlayer, Assembly-CSharp"
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 1
