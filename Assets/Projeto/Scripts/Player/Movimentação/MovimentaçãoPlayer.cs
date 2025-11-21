@@ -30,7 +30,9 @@ public class MovimentaçãoPlayer : MonoBehaviour
 
     [Header("Sons de passos")]
     [SerializeField] private AudioSource audioPassos;
-    [SerializeField] private AudioClip somPasso;
+    [SerializeField] private AudioClip[] sonsPassosAgachado;
+    [SerializeField] private AudioClip[] sonsPassosAndando;
+    [SerializeField] private AudioClip[] sonsPassosCorrendo;
 
     [Header("Stamina")]
     [SerializeField] public float MaxEstamina;
@@ -53,6 +55,10 @@ public class MovimentaçãoPlayer : MonoBehaviour
     private bool movimentoHabilitado = true;
     private bool rotacaoHabilitada = true;
 
+    // Variáveis de estado para evitar conflitos de Transform
+    private float currentHeightY;
+    private float currentBobRoll;
+
     // NOVO: controle global da lógica de câmera (rotacao/headbob/altura)
     private bool cameraControlEnabled = true;
 
@@ -66,6 +72,10 @@ public class MovimentaçãoPlayer : MonoBehaviour
         {
             posicaoInicialCamera = cameraReferencia.localPosition;
             rotacaoInicialCamera = cameraReferencia.localRotation;
+            currentHeightY = cameraReferencia.localPosition.y;
+
+            // Garante que AlturaEmPé tenha valor válido se não configurado no Inspector
+            if (Mathf.Abs(AlturaEmPé) < 0.001f) AlturaEmPé = currentHeightY;
         }
 
         if (audioPassos == null)
@@ -79,63 +89,120 @@ public class MovimentaçãoPlayer : MonoBehaviour
         SistemaStamina();
         AlturaCamera();
         //DetectarInteracao();
-        //HeadbobAvancado();
+        HeadbobAvancado();
     }
 
     #region Headbob
     private void HeadbobAvancado()
     {
-        // respeita bloqueio de câmera
-        if (!isGrounded || cameraReferencia == null || !cameraControlEnabled) return;
+        if (cameraReferencia == null) return;
 
-        Vector3 horizontalVel = new Vector3(RB.linearVelocity.x, 0, RB.linearVelocity.z);
-        float velocidadeAtual = horizontalVel.magnitude;
+        // 1. Calcular offsets de Headbob (apenas se houver controle e estiver no chão)
+        float bobOffsetX = 0;
+        float bobOffsetY = 0;
+        float targetRoll = 0;
+        Vector3 tremor = Vector3.zero;
 
-        if (velocidadeAtual > 0.1f)
+        // Usar Input para detectar movimento garante que o headbob funcione 
+        // mesmo se a física (RB.linearVelocity) estiver retornando valores baixos/instáveis
+        float inputH = Input.GetAxis("Horizontal");
+        float inputV = Input.GetAxis("Vertical");
+        float inputMagnitude = new Vector2(inputH, inputV).magnitude;
+
+        // Adicionado: && movimentoHabilitado para não tocar passos se o player estiver travado (ex: dentro do Locker)
+        if (isGrounded && cameraControlEnabled && movimentoHabilitado && inputMagnitude > 0.1f)
         {
-            contadorMovimento += Time.deltaTime * velocidadeBob;
+            float currentBobSpeed = velocidadeBob;
+            // Ajustar frequência do passo conforme estado
+            if (!isCrouching && Input.GetKey(KeyCode.LeftShift) && !isCansado && EstaminaAtual > 0)
+                currentBobSpeed *= 1.45f;
+            else if (isCrouching)
+                currentBobSpeed *= 0.6f;
 
-            float offsetY = Mathf.Sin(contadorMovimento) * intensidadeVertical;
-            float offsetX = Mathf.Cos(contadorMovimento * 0.5f) * intensidadeHorizontal;
-            float rotZ = Mathf.Sin(contadorMovimento * 0.5f) * intensidadeRotacao;
+            contadorMovimento += Time.deltaTime * currentBobSpeed;
 
-            Vector3 tremor = Vector3.zero;
+            bobOffsetY = Mathf.Sin(contadorMovimento) * intensidadeVertical;
+            bobOffsetX = Mathf.Cos(contadorMovimento * 0.5f) * intensidadeHorizontal;
+            targetRoll = Mathf.Sin(contadorMovimento * 0.5f) * intensidadeRotacao;
+
             if ((Input.GetKey(KeyCode.LeftShift) && !isCrouching) || isCansado)
             {
                 tremor.x = Random.Range(-intensidadeTremor, intensidadeTremor);
                 tremor.y = Random.Range(-intensidadeTremor, intensidadeTremor);
             }
 
-            Vector3 targetPos = posicaoInicialCamera + new Vector3(offsetX, offsetY, 0) + tremor;
-            cameraReferencia.localPosition = Vector3.Lerp(cameraReferencia.localPosition, targetPos, Time.deltaTime * 10f);
-
-            Quaternion targetRot = rotacaoInicialCamera * Quaternion.Euler(0, 0, rotZ);
-            cameraReferencia.localRotation = Quaternion.Slerp(cameraReferencia.localRotation, targetRot, Time.deltaTime * 10f);
-
-            if (!passoTocado && offsetY > intensidadeVertical * 0.8f)
+            // Lógica de passos
+            if (!passoTocado && bobOffsetY > intensidadeVertical * 0.8f)
             {
                 TocarSomPasso();
                 passoTocado = true;
             }
-            else if (offsetY < 0)
+            else if (bobOffsetY < 0)
             {
                 passoTocado = false;
             }
         }
         else
         {
-            cameraReferencia.localPosition = Vector3.Lerp(cameraReferencia.localPosition, posicaoInicialCamera, Time.deltaTime * 5f);
-            cameraReferencia.localRotation = Quaternion.Slerp(cameraReferencia.localRotation, rotacaoInicialCamera, Time.deltaTime * 5f);
             contadorMovimento = 0f;
         }
+
+        // 2. Atualizar Roll suavizado
+        currentBobRoll = Mathf.Lerp(currentBobRoll, targetRoll, Time.deltaTime * 10f);
+
+        // 3. Aplicar Transform Final (Combinação de Altura Base + Mouse Look + Headbob)
+        
+        // Posição: Base Inicial X/Z + Offsets + Altura Dinâmica
+        Vector3 finalPos = new Vector3(
+            posicaoInicialCamera.x + bobOffsetX + tremor.x,
+            currentHeightY + bobOffsetY + tremor.y,
+            posicaoInicialCamera.z
+        );
+        
+        // Usamos Lerp para a posição final para manter suavidade do tremor/offsets,
+        // mas a currentHeightY já é interpolada, então isso adiciona um pouco mais de "peso".
+        // Se ficar muito lento, podemos atribuir direto ou aumentar a velocidade do Lerp.
+        cameraReferencia.localPosition = Vector3.Lerp(cameraReferencia.localPosition, finalPos, Time.deltaTime * 10f);
+
+        // Rotação: Pitch Instantâneo (Mouse) + Roll Suavizado (Headbob)
+        // Importante: Não usamos Slerp no Pitch para evitar input lag no mouse.
+        Quaternion finalRot = Quaternion.Euler(RotacaoVertical, 0f, currentBobRoll);
+        cameraReferencia.localRotation = finalRot;
     }
 
     private void TocarSomPasso()
     {
-        if (audioPassos != null && somPasso != null)
+        if (audioPassos == null) return;
+
+        AudioClip[] clipsSelecionados = null;
+
+        // Determinar estado atual para seleção de som
+        bool isRunning = !isCrouching && Input.GetKey(KeyCode.LeftShift) && !isCansado && EstaminaAtual > 0;
+
+        if (isCrouching)
         {
-            audioPassos.pitch = 0.9f + Random.Range(0f, 0.2f);
-            audioPassos.PlayOneShot(somPasso);
+            clipsSelecionados = sonsPassosAgachado;
+        }
+        else if (isRunning)
+        {
+            clipsSelecionados = sonsPassosCorrendo;
+        }
+        else
+        {
+            clipsSelecionados = sonsPassosAndando;
+        }
+
+        // Tocar som aleatório da lista selecionada
+        if (clipsSelecionados != null && clipsSelecionados.Length > 0)
+        {
+            int index = Random.Range(0, clipsSelecionados.Length);
+            AudioClip clip = clipsSelecionados[index];
+
+            if (clip != null)
+            {
+                audioPassos.pitch = 0.9f + Random.Range(0f, 0.2f);
+                audioPassos.PlayOneShot(clip);
+            }
         }
     }
     #endregion
@@ -152,8 +219,8 @@ public class MovimentaçãoPlayer : MonoBehaviour
         float mouseY = Input.GetAxis("Mouse Y") * MouseSensibilidade;
         RotacaoVertical -= mouseY;
         RotacaoVertical = Mathf.Clamp(RotacaoVertical, -80f, 80f);
-        if (cameraReferencia != null)
-            cameraReferencia.localRotation = Quaternion.Euler(RotacaoVertical, 0f, cameraReferencia.localRotation.eulerAngles.z);
+        
+        // A aplicação da rotação vertical é feita no HeadbobAvancado (ou UpdateCamera) para evitar conflitos
     }
 
     private void PuloAgachar()
@@ -167,9 +234,8 @@ public class MovimentaçãoPlayer : MonoBehaviour
         if (!cameraControlEnabled) return;
 
         float targetHeight = isCrouching ? AlturaAgachado : AlturaEmPé;
-        Vector3 cameraPos = cameraReferencia.localPosition;
-        cameraPos.y = Mathf.Lerp(cameraPos.y, targetHeight, Time.deltaTime * VelocidadeTransição);
-        cameraReferencia.localPosition = cameraPos;
+        // Apenas atualiza o valor suavizado da altura base, sem setar o transform diretamente
+        currentHeightY = Mathf.Lerp(currentHeightY, targetHeight, Time.deltaTime * VelocidadeTransição);
     }
     #endregion
 
