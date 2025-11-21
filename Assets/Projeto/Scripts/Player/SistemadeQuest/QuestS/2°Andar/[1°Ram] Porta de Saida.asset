@@ -14,3 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   descricao: "Essa porta d\xE1 em uma escadaria, preciso achar essa chave."
   tipo: 1
+  objectives:
+  - id: ColetaraChave
+    type: 1
+    targetTagOrId: 
+    targetAmount: 1
+    autoComplete: 0

@@ -21,5 +21,9 @@ MonoBehaviour:
   textoPagina: "\u201CAnota\xE7\xE3o n\xBA 7 \u2014 Sem data\u201D\n\nN\xE3o sei
     h\xE1 quanto tempo estou aqui. Os dias n\xE3o existem mais, e as horas... elas
     apenas se misturam num mesmo cinza. No come\xE7o, eu gritava \u2014 achando que
-    algu\xE9m me ouviria. Agora, o sil\xEAncio \xE9 a \xFAnica voz que responde.\n"
+    algu\xE9m me ouviria. Agora, o sil\xEAncio \xE9 a \xFAnica voz que responde.\n\nCurioso
+    como esse lugar, mesmo distorcido, me acolheu melhor que o mundo real. L\xE1
+    fora, eu era invis\xEDvel. Aqui, pelo menos, as sombras me olham. Sei que n\xE3o
+    \xE9 afeto \u2014 \xE9 fome, curiosidade, ou talvez apenas reflexo do que eu
+    sou por dentro. Ainda assim, \xE9 mais do que eu tinha."
   imagemPagina: {fileID: 21300000, guid: 5dee3f2a1179bfd4caeee28e8060c6aa, type: 3}

@@ -15,3 +15,9 @@ MonoBehaviour:
   descricao: "Esse livro \xE9 estranho, mas talvez ele possa me ajudar a entender
     esse lugar..."
   tipo: 2
+  objectives:
+  - id: collect_page
+    type: 1
+    targetTagOrId: 
+    targetAmount: 20
+    autoComplete: 0

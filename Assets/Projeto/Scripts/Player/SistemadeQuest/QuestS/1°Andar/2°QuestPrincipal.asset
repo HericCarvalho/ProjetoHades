@@ -15,3 +15,9 @@ MonoBehaviour:
   descricao: "Finalmente uma saida, mas est\xE1 trancada, preciso achar essa maldita
     chave, mas sinto que algo espreita as sombras..."
   tipo: 0
+  objectives:
+  - id: achar_chave
+    type: 1
+    targetTagOrId: 
+    targetAmount: 1
+    autoComplete: 0

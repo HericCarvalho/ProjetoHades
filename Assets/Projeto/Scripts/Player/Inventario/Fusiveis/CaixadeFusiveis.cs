@@ -15,10 +15,16 @@ public class CaixadeFusiveis : MonoBehaviour
     public bool tentarAutoFillAoAbrir = true;
     public bool removerDoInventarioAoColocar = true;
 
-    [Header("Eventos")]
-    public UnityEngine.Events.UnityEvent onSolved;
-    public UnityEngine.Events.UnityEvent onPlaced;
-    public UnityEngine.Events.UnityEvent onRemoved;
+    [Header("Eventos (simples)")]
+    public UnityEvent onPlaced;
+    public UnityEvent onRemoved;
+    public UnityEvent onSolved;              // o seu evento original (sem índice)
+
+    [Header("Eventos (com índice da sequência)")]
+    public UnityEventInt onSolvedWithIndex; // novo: invoca com o índice da sequência correta
+
+    [System.Serializable]
+    public class UnityEventInt : UnityEvent<int> { }
 
     private void Reset()
     {
@@ -141,26 +147,38 @@ public class CaixadeFusiveis : MonoBehaviour
         return result;
     }
 
+    /// <summary>
+    /// Verifica se o estado atual dos slots corresponde exatamente a alguma sequência válida.
+    /// Se corresponder, invoca onSolved e onSolvedWithIndex(index).
+    /// Retorna true se resolveu.
+    /// </summary>
     public bool CheckSolved()
     {
         int[] current = GetCurrentIDs();
 
-        foreach (var s in sequenciasValidas)
+        for (int i = 0; i < sequenciasValidas.Count; i++)
         {
+            var s = sequenciasValidas[i];
             if (s == null) continue;
             int[] seq = s.ToArray();
             if (seq.Length != current.Length) continue;
 
             bool igual = true;
-            for (int i = 0; i < current.Length; i++)
+            for (int j = 0; j < current.Length; j++)
             {
-                if (seq[i] != current[i]) { igual = false; break; }
+                if (seq[j] != current[j]) { igual = false; break; }
             }
 
             if (igual)
             {
-                Debug.Log("[Caixa] Sequência correta! Puzzle resolvido.");
+                Debug.Log($"[Caixa] Sequência correta! Puzzle resolvido. indice={i}");
+
+                // invoca eventos (mantendo compatibilidade com seu fluxo atual)
                 onSolved?.Invoke();
+
+                if (onSolvedWithIndex != null)
+                    onSolvedWithIndex.Invoke(i);
+
                 return true;
             }
         }
@@ -200,5 +218,4 @@ public class CaixadeFusiveis : MonoBehaviour
         CheckSolved();
         return true;
     }
-
 }

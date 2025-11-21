@@ -14,3 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   descricao: "Acho que isso pode me ajudar a ligar a luz daquele corredor\r"
   tipo: 1
+  objectives:
+  - id: LigarCorredor2
+    type: 4
+    targetTagOrId: 
+    targetAmount: 1
+    autoComplete: 0

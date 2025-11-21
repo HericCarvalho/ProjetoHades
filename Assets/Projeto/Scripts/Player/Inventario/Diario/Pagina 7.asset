@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3efa800beff6eac4eab536d5c3fd9b32, type: 3}
+  m_Name: Pagina 7
+  m_EditorClassIdentifier: 
+  nomeItem: "Desabafo N\xB0?"
+  iconeItem: {fileID: 21300000, guid: 5dee3f2a1179bfd4caeee28e8060c6aa, type: 3}
+  abreJanela: 0
+  prefabMundo: {fileID: 0}
+  descricao: "Uma pagina arrancada.\nElas est\xE1 manchada de sangue. "
+  numeroPagina: 7
+  textoPagina: "Toda vez que deixo uma prova incompleta, ou\xE7o passos \u2014 lentos,
+    arrastados \u2014 vindo do final do corredor. Quando termino uma, os passos se
+    afastam.\n\nEu n\xE3o quero descobrir quem \u2014 ou o qu\xEA \u2014 se aproxima
+    quando eu procrastino.\n\nSe algu\xE9m encontrou isso\u2026 por favor, corra.\nAqui,
+    o trabalho nunca acaba.\nE o sono nunca traz descanso."
+  imagemPagina: {fileID: 21300000, guid: 5dee3f2a1179bfd4caeee28e8060c6aa, type: 3}

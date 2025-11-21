@@ -1,21 +1,46 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(CaixadeFusiveis))]
 public class FuseboxInteractor : MonoBehaviour
 {
-    [Header("Referencias")]
+    [System.Serializable]
+    public class SequenceAction
+    {
+        [Header("Zonas/Luzes/Corredores")]
+        public NoiseZone[] noiseZones;
+        public CorridorTrigger[] corridorTriggers;
+        public LightController[] lightControllers;
+        public float lightsTargetIntensity = 1f;
+        public float lightsRampDuration = 1f;
+
+        [Header("HUD / SFX")]
+        public bool showSolvedMessage = true;
+        [TextArea] public string solvedMessage = "As luzes acendem.";
+        public AudioClip solvedSfx;
+
+        [Header("Quest (opcional)")]
+        public QuestSO questToAffect;       // a QuestSO correspondente a esta sequência
+        public string questObjectiveId;     // id do objetivo (ex: "place_fuse" ou "solve_sequence")
+        public bool addQuestIfMissing = true; // se true, adiciona a quest ao resolver (caso ainda não exista)
+        public bool completeDirectly = false; // se true, chama CompleteQuest(QuestSO) em vez de MarkObjective
+
+        [Header("Opções")]
+        public bool deactivateNoiseGameObjects = true; // se true, desativa o gameobject da NoiseZone após Unlock()
+    }
+
+    [Header("Referencias gerais")]
     public Transform cameraPoint;
     public Camera jogadorCamera;
     public string playerTag = "Player";
     public KeyCode teclaInteragir = KeyCode.E;
     public KeyCode teclaFechar = KeyCode.Escape;
 
-    [Header("Controles de interação")]
+    [Header("Controles")]
     public KeyCode nextSlotKey = KeyCode.RightArrow;
     public KeyCode prevSlotKey = KeyCode.LeftArrow;
     public KeyCode pickPlaceKey = KeyCode.Space;
-    public KeyCode swapKey = KeyCode.LeftShift;
 
     [Header("Transição câmera")]
     public float tempoTransicao = 0.4f;
@@ -23,8 +48,15 @@ public class FuseboxInteractor : MonoBehaviour
     [Header("Opções")]
     public bool autoFillOnOpen = true;
 
-    [Header("Visual (prefabs na cena)")]
-    public FuseboxVisual visual; // arraste aqui o componente que instancia os prefabs
+    [Header("Visual")]
+    public FuseboxVisual visual;
+
+    [Header("Ações por sequência (ordem deve seguir CaixadeFusiveis.sequenciasValidas)")]
+    public List<SequenceAction> sequenceActions = new List<SequenceAction>();
+
+    [Header("SFX fallback")]
+    public AudioSource sfxSource;
+    public AudioClip genericSolvedSfx;
 
     // estado interno
     private CaixadeFusiveis caixa;
@@ -40,9 +72,10 @@ public class FuseboxInteractor : MonoBehaviour
     private CursorLockMode prevCursorLock;
     private bool prevCursorVisible;
 
-    private void Awake()
+    private void Reset()
     {
-        caixa = GetComponent<CaixadeFusiveis>();
+        // ajuda inicial no editor
+        if (caixa == null) caixa = GetComponent<CaixadeFusiveis>();
         if (cameraPoint == null)
         {
             GameObject cp = new GameObject("CameraPoint");
@@ -53,74 +86,85 @@ public class FuseboxInteractor : MonoBehaviour
         }
     }
 
+    private void Awake()
+    {
+        caixa = GetComponent<CaixadeFusiveis>();
+        if (caixa == null)
+            Debug.LogError("[FuseboxInteractor] CaixadeFusiveis não encontrada no GameObject.");
+
+        if (cameraPoint == null)
+        {
+            GameObject cp = new GameObject("CameraPoint");
+            cp.transform.SetParent(transform, false);
+            cp.transform.localPosition = Vector3.forward * 0.5f + Vector3.up * 0.6f;
+            cp.transform.localRotation = Quaternion.identity;
+            cameraPoint = cp.transform;
+        }
+
+        // Registra listeners com segurança
+        if (caixa != null)
+        {
+            // onSolved (legacy sem índice) - mapear para index 0 por compatibilidade
+            caixa.onSolved.AddListener(OnFuseboxSolvedLegacy);
+
+            // onSolvedWithIndex pode ser null se não definido no CaixadeFusiveis; usamos ?.
+            caixa.onSolvedWithIndex?.AddListener(OnFuseboxSolvedWithIndex);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (caixa != null)
+        {
+            caixa.onSolved.RemoveListener(OnFuseboxSolvedLegacy);
+            caixa.onSolvedWithIndex?.RemoveListener(OnFuseboxSolvedWithIndex);
+        }
+    }
+
     private void Update()
     {
+        if (caixa == null) return;
+
         if (!isInteracting && Input.GetKeyDown(teclaInteragir))
         {
             GameObject p = GameObject.FindGameObjectWithTag(playerTag);
             if (p != null)
             {
                 float d = Vector3.Distance(p.transform.position, transform.position);
-                if (d <= 3.0f)
-                {
-                    StartCoroutine(StartInteraction(p));
-                }
-                else
-                {
-                    // REMOVIDO: mensagem de "está longe" — não queremos mais mostrar nada aqui.
-                    // Se quiser, pode adicionar um feedback visual leve no crosshair em vez de texto.
-                }
+                if (d <= 3.0f) StartCoroutine(StartInteraction(p));
+                else { /* opcional: feedback */ }
             }
-            else
-            {
-                StartCoroutine(StartInteraction(null));
-            }
+            else StartCoroutine(StartInteraction(null));
         }
 
         if (isInteracting)
         {
             if (Input.GetKeyDown(nextSlotKey))
                 SelectSlot((selectedSlot + 1) % caixa.slots.Length);
-
             if (Input.GetKeyDown(prevSlotKey))
             {
                 int len = caixa.slots.Length;
                 SelectSlot((selectedSlot - 1 + len) % len);
             }
-
             if (Input.GetKeyDown(pickPlaceKey))
                 HandlePickOrPlace();
-
             if (Input.GetKeyDown(teclaFechar))
                 StopInteraction();
         }
     }
 
-    public void StartInteractionFromPlayer(GameObject player)
-    {
-        if (isInteracting) return;
-        StartCoroutine(StartInteraction(player));
-    }
+    public void StartInteractionFromPlayer(GameObject player) { if (isInteracting) return; StartCoroutine(StartInteraction(player)); }
 
     private IEnumerator StartInteraction(GameObject playerObj)
     {
         isInteracting = true;
+        if (jogadorCamera == null) jogadorCamera = Camera.main;
+        if (jogadorCamera == null) { Debug.LogWarning("[FuseboxInteractor] Camera principal não encontrada."); isInteracting = false; yield break; }
 
-        if (jogadorCamera == null)
-            jogadorCamera = Camera.main;
-        if (jogadorCamera == null)
-        {
-            Debug.LogWarning("[FuseboxInteractor] Camera principal não encontrada.");
-            isInteracting = false;
-            yield break;
-        }
-
-        // salva estado da câmera
         initialCamPos = jogadorCamera.transform.position;
         initialCamRot = jogadorCamera.transform.rotation;
         originalCameraParent = jogadorCamera.transform.parent;
 
-        // bloqueia controles do jogador
         if (playerObj != null)
         {
             movPlayer = playerObj.GetComponent<MovimentaçãoPlayer>();
@@ -132,25 +176,20 @@ public class FuseboxInteractor : MonoBehaviour
                 movPlayer.SetCameraControl(false);
             }
             var rb = playerObj.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-            }
+            if (rb != null) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
         }
 
-        // salva cursor
         prevCursorLock = Cursor.lockState;
         prevCursorVisible = Cursor.visible;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // transição da câmera (mantém roll 0 para evitar "pulos")
+        // transição locomotion -> cameraPoint
         float t = 0f;
         Vector3 startPos = jogadorCamera.transform.position;
         Quaternion startRot = jogadorCamera.transform.rotation;
-        Vector3 targetPos = cameraPoint.position;
-        Quaternion targetRot = Quaternion.Euler(cameraPoint.rotation.eulerAngles.x, cameraPoint.rotation.eulerAngles.y, 0f);
+        Vector3 targetPos = cameraPoint != null ? cameraPoint.position : transform.position + transform.forward * 0.5f + Vector3.up * 0.6f;
+        Quaternion targetRot = cameraPoint != null ? Quaternion.Euler(cameraPoint.rotation.eulerAngles.x, cameraPoint.rotation.eulerAngles.y, 0f) : Quaternion.identity;
 
         while (t < tempoTransicao)
         {
@@ -171,22 +210,10 @@ public class FuseboxInteractor : MonoBehaviour
         selectedSlot = 0;
         HighlightSlot(selectedSlot);
 
-        if (autoFillOnOpen)
-        {
-            caixa.TryAutoFillFromInventory();
-            // garantir atualização visual após auto-fill
-            UpdateVisuals();
-        }
-        else
-        {
-            UpdateVisuals();
-        }
+        if (autoFillOnOpen) { caixa.TryAutoFillFromInventory(); UpdateVisuals(); } else UpdateVisuals();
     }
 
-    private void StopInteraction()
-    {
-        StartCoroutine(StopInteractionCoroutine());
-    }
+    private void StopInteraction() { StartCoroutine(StopInteractionCoroutine()); }
 
     private IEnumerator StopInteractionCoroutine()
     {
@@ -197,11 +224,7 @@ public class FuseboxInteractor : MonoBehaviour
             heldFromInventory = false;
         }
 
-        if (jogadorCamera == null)
-        {
-            isInteracting = false;
-            yield break;
-        }
+        if (jogadorCamera == null) { isInteracting = false; yield break; }
 
         float t = 0f;
         Vector3 startPos = jogadorCamera.transform.position;
@@ -237,18 +260,18 @@ public class FuseboxInteractor : MonoBehaviour
 
     private void SelectSlot(int index)
     {
+        if (caixa == null || caixa.slots == null || caixa.slots.Length == 0) return;
         selectedSlot = Mathf.Clamp(index, 0, caixa.slots.Length - 1);
         HighlightSlot(selectedSlot);
         HUD_Interacao.instancia?.MostrarMensagem($"Slot selecionado: {selectedSlot + 1}");
     }
 
-    private void HighlightSlot(int index)
-    {
-        Debug.Log($"[FuseboxInteractor] Highlight slot {index}");
-    }
+    private void HighlightSlot(int index) { Debug.Log($"[FuseboxInteractor] Highlight slot {index}"); }
 
     private void HandlePickOrPlace()
     {
+        if (caixa == null) return;
+
         if (heldFuse == null)
         {
             FusivelItem f = caixa.slots[selectedSlot];
@@ -270,10 +293,8 @@ public class FuseboxInteractor : MonoBehaviour
                     }
                 }
 
-                if (heldFuse == null)
-                    HUD_Interacao.instancia?.MostrarMensagem("Não há fusível aqui nem no inventário.");
-                else
-                    UpdateVisuals();
+                if (heldFuse == null) HUD_Interacao.instancia?.MostrarMensagem("Não há fusível aqui nem no inventário.");
+                else UpdateVisuals();
 
                 return;
             }
@@ -313,17 +334,96 @@ public class FuseboxInteractor : MonoBehaviour
 
     private void UpdateVisuals()
     {
-        // atualiza text/log
+        if (caixa == null) return;
+
         string s = "Estado slots: ";
-        for (int i = 0; i < caixa.slots.Length; i++)
-            s += (caixa.slots[i] == null ? "0" : caixa.slots[i].fusivelID.ToString()) + (i < caixa.slots.Length - 1 ? "," : "");
+        for (int i = 0; i < caixa.slots.Length; i++) s += (caixa.slots[i] == null ? "0" : caixa.slots[i].fusivelID.ToString()) + (i < caixa.slots.Length - 1 ? "," : "");
         s += " | Mão: " + (heldFuse == null ? "vazia" : heldFuse.fusivelID.ToString());
         Debug.Log("[FuseboxInteractor] " + s);
 
-        // se houver componente visual atribuído, atualiza a cena (prefabs)
-        if (visual != null)
+        if (visual != null) visual.UpdateVisual(caixa.GetCurrentIDs());
+    }
+
+    // Handlers de solved
+    private void OnFuseboxSolvedLegacy() { Debug.Log("[FuseboxInteractor] CaixadeFusiveis (legacy) resolveu. Aplicando ações index=0."); ApplySequenceActions(0); }
+    private void OnFuseboxSolvedWithIndex(int seqIndex) { Debug.Log($"[FuseboxInteractor] CaixadeFusiveis solved index={seqIndex}"); ApplySequenceActions(seqIndex); }
+
+    private void ApplySequenceActions(int seqIndex)
+    {
+        if (sequenceActions == null || sequenceActions.Count == 0) { Debug.LogWarning("[FuseboxInteractor] sequenceActions vazio."); return; }
+        if (seqIndex < 0 || seqIndex >= sequenceActions.Count) { Debug.LogWarning($"[FuseboxInteractor] seqIndex {seqIndex} fora do range."); return; }
+
+        var action = sequenceActions[seqIndex];
+
+        // Noise zones
+        if (action.noiseZones != null)
         {
-            visual.UpdateVisual(caixa.GetCurrentIDs());
+            foreach (var nz in action.noiseZones)
+            {
+                if (nz == null) continue;
+                nz.Unlock();
+                if (action.deactivateNoiseGameObjects)
+                {
+                    try { nz.gameObject.SetActive(false); }
+                    catch { }
+                }
+            }
+        }
+
+        // Corridor triggers
+        if (action.corridorTriggers != null)
+        {
+            foreach (var ct in action.corridorTriggers)
+            {
+                if (ct == null) continue;
+                ct.UnlockCorridor();
+            }
+        }
+
+        // Light controllers
+        if (action.lightControllers != null)
+        {
+            foreach (var lc in action.lightControllers)
+            {
+                if (lc == null) continue;
+                lc.UnlockLights(action.lightsTargetIntensity, action.lightsRampDuration);
+            }
+        }
+
+        // HUD / SFX
+        if (action.showSolvedMessage && HUD_Interacao.instancia != null) HUD_Interacao.instancia.MostrarNotificacao(action.solvedMessage, null);
+        AudioClip toPlay = action.solvedSfx != null ? action.solvedSfx : genericSolvedSfx;
+        if (toPlay != null)
+        {
+            if (sfxSource != null) sfxSource.PlayOneShot(toPlay);
+            else AudioSource.PlayClipAtPoint(toPlay, transform.position);
+        }
+
+        // --- QUEST LOGIC ---
+        if (action.questToAffect != null && QuestManager.Instance != null)
+        {
+            if (action.addQuestIfMissing && !QuestManager.Instance.HasQuest(action.questToAffect))
+            {
+                var e = QuestManager.Instance.AddQuest(action.questToAffect);
+                if (e == null)
+                {
+                    // fallback: forçar add (remove+add) se existir problema com lookup
+                    var forced = QuestManager.Instance.AddQuest_Force(action.questToAffect);
+                    Debug.Log($"[FuseboxInteractor] AddQuest fallback forçado: {(forced != null)}");
+                }
+                else Debug.Log($"[FuseboxInteractor] Quest adicionada: {action.questToAffect.name}");
+            }
+
+            if (action.completeDirectly)
+            {
+                bool ok = QuestManager.Instance.CompleteQuest(action.questToAffect);
+                Debug.Log($"[FuseboxInteractor] CompleteQuest chamado para '{action.questToAffect.name}' -> {ok}");
+            }
+            else if (!string.IsNullOrEmpty(action.questObjectiveId))
+            {
+                bool ok = QuestManager.Instance.MarkObjective(action.questToAffect, action.questObjectiveId, 1);
+                Debug.Log($"[FuseboxInteractor] MarkObjective chamado para '{action.questToAffect.name}' obj='{action.questObjectiveId}' -> {ok}");
+            }
         }
     }
 }

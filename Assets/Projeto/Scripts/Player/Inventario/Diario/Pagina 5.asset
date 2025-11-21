@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3efa800beff6eac4eab536d5c3fd9b32, type: 3}
+  m_Name: Pagina 5
+  m_EditorClassIdentifier: 
+  nomeItem: "Desabafo N\xB02"
+  iconeItem: {fileID: 21300000, guid: 5dee3f2a1179bfd4caeee28e8060c6aa, type: 3}
+  abreJanela: 0
+  prefabMundo: {fileID: 0}
+  descricao: "Uma pagina arrancada.\nElas est\xE1 manchada de sangue. "
+  numeroPagina: 5
+  textoPagina: "Eu estava exausto. No mundo real \u2014 se \xE9 que ele ainda existe
+    \u2014 eu devo ter dormido sobre aquele amontoado de pap\xE9is, com a caneta
+    ainda presa entre os dedos. Minha rotina era isso: chegar cedo, sair tarde, corrigir
+    at\xE9 meus olhos queimarem. Trabalhar tanto que parecia que eu s\xF3 respirava
+    por obriga\xE7\xE3o.\n\nAqui, por\xE9m, o tempo n\xE3o avan\xE7a. As luzes fluorescentes
+    piscam sem cessar, como se estivessem zombando de mim. O corredor que leva \xE0s
+    salas est\xE1 do avesso \u2014 literalmente. As portas est\xE3o viradas para
+    dentro da parede, como se algu\xE9m tivesse arrancado o sentido delas.\n\nCaminhei
+    at\xE9 uma delas, e tudo o que encontrei foi o reflexo distorcido de mim mesmo,
+    multiplicado por superf\xEDcies espelhadas que n\xE3o deveriam existir. Meu reflexo
+    respirava mais r\xE1pido do que eu.\n\nEu tento gritar, mas o som n\xE3o me obedece.
+    Ele sai baixo demais, como se at\xE9 minha voz estivesse cansada."
+  imagemPagina: {fileID: 21300000, guid: 5dee3f2a1179bfd4caeee28e8060c6aa, type: 3}

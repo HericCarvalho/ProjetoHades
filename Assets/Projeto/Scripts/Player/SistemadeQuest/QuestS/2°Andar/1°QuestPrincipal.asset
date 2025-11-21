@@ -14,3 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   descricao: Onde eu estou? Porque estou aqui? Preciso achar uma maneira de sair!
   tipo: 0
+  objectives:
+  - id: abrir_porta
+    type: 0
+    targetTagOrId: 
+    targetAmount: 1
+    autoComplete: 0

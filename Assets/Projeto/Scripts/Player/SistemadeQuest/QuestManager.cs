@@ -8,10 +8,13 @@ public class QuestManager : MonoBehaviour
 
     public event Action<QuestEntry> OnQuestAdded;
     public event Action<QuestEntry> OnQuestCompleted;
-    public event Action<QuestEntry> OnQuestRemoved; // opcional
+    public event Action<QuestEntry> OnQuestRemoved;
+    public event Action<QuestEntry, string, int, int> OnObjectiveUpdated;
 
     private readonly List<QuestEntry> activeQuests = new List<QuestEntry>();
+    private readonly List<QuestEntry> completedQuests = new List<QuestEntry>();
     private readonly Dictionary<QuestSO, QuestEntry> lookup = new Dictionary<QuestSO, QuestEntry>();
+
 
     private void Awake()
     {
@@ -48,7 +51,6 @@ public class QuestManager : MonoBehaviour
         Debug.Log("[QuestManager] OnQuestAdded invoked for: " + quest.name);
         return entry;
     }
-    // FORÇAR: debug apenas
     public QuestEntry AddQuest_Force(QuestSO quest)
     {
         if (quest == null) return null;
@@ -61,27 +63,29 @@ public class QuestManager : MonoBehaviour
         }
         return AddQuest(quest); // chama o método normal depois de remover
     }
-
-
     public bool HasQuest(QuestSO quest)
     {
         if (quest == null) return false;
         return lookup.ContainsKey(quest);
     }
-
     public bool CompleteQuest(QuestSO quest)
     {
         if (quest == null) return false;
         if (!lookup.TryGetValue(quest, out QuestEntry entry)) return false;
         if (entry.completed) return false;
 
-        entry.completed = true;
-        entry.completedTime = DateTime.Now;
+        // marca como completa
+        entry.MarkCompleted();
+
+        // remove das listas ativas e lookup, adiciona em completed
+        lookup.Remove(quest);
+        activeQuests.Remove(entry);
+        completedQuests.Add(entry);
+
         OnQuestCompleted?.Invoke(entry);
-        Debug.Log($"[QuestManager] Quest completada: {quest.name}");
+        Debug.Log($"[QuestManager] Quest completada: {quest.name} at {entry.completedTime}");
         return true;
     }
-
     public bool RemoveQuest(QuestSO quest)
     {
         if (quest == null) return false;
@@ -93,25 +97,81 @@ public class QuestManager : MonoBehaviour
         Debug.Log($"[QuestManager] Quest removida: {quest.name}");
         return true;
     }
-
     public List<QuestEntry> GetActiveQuests()
     {
         return new List<QuestEntry>(activeQuests);
     }
-
-    // utilitário (opcional)
     public bool CompleteQuestByName(string questName)
     {
         var e = activeQuests.Find(x => x.quest != null && x.quest.name == questName);
-        return e != null && CompleteQuest(e);
+        if (e == null) return false;
+        return CompleteQuest(e);
     }
-
     public bool CompleteQuest(QuestEntry entry)
     {
         if (entry == null || entry.completed) return false;
-        entry.completed = true;
-        entry.completedTime = DateTime.Now;
+
+        entry.MarkCompleted();
+
+        // remove das listas ativas e lookup se existir
+        if (entry.quest != null)
+        {
+            lookup.Remove(entry.quest);
+        }
+        activeQuests.Remove(entry);
+        completedQuests.Add(entry);
+
         OnQuestCompleted?.Invoke(entry);
+        Debug.Log($"[QuestManager] Quest completada: {entry?.quest?.name ?? "null"} at {entry.completedTime}");
+        return true;
+    }
+    public bool IsQuestCompleted(QuestSO quest)
+    {
+        if (quest == null) return false;
+        // procura por quest nas completedQuests
+        for (int i = 0; i < completedQuests.Count; i++)
+        {
+            var e = completedQuests[i];
+            if (e != null && e.quest == quest) return true;
+        }
+        return false;
+    }
+    public bool MarkObjective(QuestSO quest, string objectiveId, int amount = 1)
+    {
+        if (!lookup.TryGetValue(quest, out QuestEntry entry)) return false;
+        // garante que exista
+        if (!entry.objectiveProgress.ContainsKey(objectiveId))
+            entry.objectiveProgress[objectiveId] = 0;
+
+        entry.objectiveProgress[objectiveId] += amount;
+
+        // pega objetivo do QuestSO
+        var od = quest.objectives?.Find(x => x.id == objectiveId);
+        int target = od != null ? od.targetAmount : 1;
+        int progress = entry.objectiveProgress[objectiveId];
+
+        // se atingiu o target, marca como completed
+        if (progress >= target)
+            entry.objectivesCompleted.Add(objectiveId);
+
+        OnObjectiveUpdated?.Invoke(entry, objectiveId, progress, target);
+
+        // checa se TODOS objetivos completos -> completa quest
+        bool allDone = true;
+        if (quest.objectives != null)
+        {
+            foreach (var o in quest.objectives)
+            {
+                if (!entry.objectivesCompleted.Contains(o.id))
+                {
+                    allDone = false;
+                    break;
+                }
+            }
+        }
+        if (allDone)
+            CompleteQuest(quest);
+
         return true;
     }
 

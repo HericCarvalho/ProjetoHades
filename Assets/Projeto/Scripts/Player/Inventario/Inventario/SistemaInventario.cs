@@ -74,6 +74,7 @@ public class SistemaInventario : MonoBehaviour
 
     public void AdicionarItem(ItemSistema item, int quantidade = 1)
     {
+        Debug.Log($"[SistemaInventario] AdicionarItem: {item?.nomeItem} x{quantidade}");
         if (item == null || quantidade <= 0) return;
 
         // Anti-bounce: ignora adições do mesmo item dentro de 50ms
@@ -95,6 +96,7 @@ public class SistemaInventario : MonoBehaviour
 
     public void RemoverItem(ItemSistema item, int quantidade = 1)
     {
+        Debug.Log($"[SistemaInventario] RemoverItem: {item?.nomeItem} x{quantidade}");
         if (item == null || quantidade <= 0) return;
 
         var entrada = itensNoInventario.Find(e => e.item == item);

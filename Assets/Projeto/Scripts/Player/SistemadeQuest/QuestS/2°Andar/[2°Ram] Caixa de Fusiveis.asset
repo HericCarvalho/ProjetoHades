@@ -13,4 +13,10 @@ MonoBehaviour:
   m_Name: "[2\xB0Ram] Caixa de Fusiveis"
   m_EditorClassIdentifier: 
   descricao: Parece que preciso fazer algo funcionar, talvez me ajude a achar a saida.
-  tipo: 0
+  tipo: 1
+  objectives:
+  - id: LigarCorredor
+    type: 4
+    targetTagOrId: 
+    targetAmount: 1
+    autoComplete: 0

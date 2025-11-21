@@ -27,11 +27,29 @@ public class ItemInterativo : MonoBehaviour
                 break;
 
             case TipoItem.Coletavel:
-                if (itemColetavel != null)
+                var collectibleComponent = GetComponent<CollectibleItem>();
+                if (collectibleComponent == null)
+                    collectibleComponent = GetComponentInChildren<CollectibleItem>();
+
+                if (collectibleComponent != null)
                 {
-                    SistemaInventario.instancia?.AdicionarItem(itemColetavel);
-                    AudioSource.PlayClipAtPoint(somColeta, transform.position);
-                    Destroy(gameObject);
+                    Debug.Log($"[ItemInterativo] Found CollectibleItem on '{gameObject.name}', calling Collect()");
+                    collectibleComponent.Collect();
+                }
+                else
+                {
+                    Debug.Log($"[ItemInterativo] CollectibleItem NOT found on '{gameObject.name}', falling back to inventory add");
+                    if (itemColetavel != null)
+                    {
+                        SistemaInventario.instancia?.AdicionarItem(itemColetavel, 1);
+                        if (somColeta != null)
+                            AudioSource.PlayClipAtPoint(somColeta, transform.position);
+                        Destroy(gameObject); // DEVE ficar aqui, dentro do if itemColetavel != null
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[ItemInterativo] itemColetavel null e CollectibleItem ausente — nada a fazer.");
+                    }
                 }
                 break;
 

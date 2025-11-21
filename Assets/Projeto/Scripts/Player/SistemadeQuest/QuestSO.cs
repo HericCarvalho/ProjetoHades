@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum QuestType { Principal, Ramificacao, Secundaria }
@@ -9,4 +10,6 @@ public class QuestSO : ScriptableObject
     public string descricao;
 
     public QuestType tipo;
+
+    public List<QuestObjectiveData> objectives = new List<QuestObjectiveData>();
 }

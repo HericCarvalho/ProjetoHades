@@ -65,7 +65,9 @@ public class HUD_Interacao : MonoBehaviour
     public AudioClip somAbrirCapa;
 
     [Header("Bloco de Notas - Quests")]
-    [SerializeField] private TMP_Text notasQuestsText; 
+    [SerializeField] private TMP_Text notasQuestsText;
+    [SerializeField] private QuestSO diarioQuestSO;
+    [SerializeField] private string diarioObjectiveId = "collect_page";
 
     [Header("Gerais")]
     [SerializeField] private GameObject HUD_Celular;
@@ -507,6 +509,15 @@ public class HUD_Interacao : MonoBehaviour
     }
     private void HandleQuestCompleted(QuestEntry entry)
     {
+        if (entry == null || entry.quest == null) return;
+
+        // se for a quest do diario
+        if (entry.quest == diarioQuestSO)
+        {
+            MostrarNotificacao("Você terminou o diário — segredos revelados.", null);
+            // opcional: abrir o diário
+            // AbrirFecharDiario();
+        }
         Debug.Log("[HUD] HandleQuestCompleted called for: " + (entry?.quest?.name ?? "NULL"));
         if (entry == null || entry.quest == null) return;
         if (questsNoBloco.ContainsKey(entry.quest))
@@ -718,6 +729,15 @@ public class HUD_Interacao : MonoBehaviour
             Debug.Log($"[HUD] IntegrarPagina: página #{page.numeroPagina} já estava integrada — apenas atualizando UI.");
         }
 
+        if (diarioQuestSO != null && QuestManager.Instance != null)
+        {
+            // Só marca se a quest estiver ativa (não cria automaticamente)
+            if (QuestManager.Instance.HasQuest(diarioQuestSO))
+            {
+                bool marked = QuestManager.Instance.MarkObjective(diarioQuestSO, diarioObjectiveId, 1);
+                Debug.Log($"[HUD] Marca objective do diário: result={marked}");
+            }
+        }
         // atualiza a UI
         AtualizarPaginaUI(immediate: false);
     }
