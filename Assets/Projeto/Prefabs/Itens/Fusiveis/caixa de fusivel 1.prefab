@@ -215,6 +215,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 514668b2bf3df0c4881a4de99f0da673, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4234912099848628769}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 514668b2bf3df0c4881a4de99f0da673, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6105660539024168042}
   m_SourcePrefab: {fileID: 100100000, guid: 514668b2bf3df0c4881a4de99f0da673, type: 3}
 --- !u!1 &4809095092228411208 stripped
 GameObject:
@@ -237,6 +240,8 @@ MonoBehaviour:
   descricao: 
   somColeta: {fileID: 0}
   itemColetavel: {fileID: 0}
+  interactionPoint: {fileID: 0}
+  popupOffset: {x: 0, y: 0, z: 0}
   onInteragir:
     m_PersistentCalls:
       m_Calls:
@@ -295,13 +300,16 @@ MonoBehaviour:
   - values: 030000000200000001000000
   tentarAutoFillAoAbrir: 1
   removerDoInventarioAoColocar: 1
-  onSolved:
-    m_PersistentCalls:
-      m_Calls: []
   onPlaced:
     m_PersistentCalls:
       m_Calls: []
   onRemoved:
+    m_PersistentCalls:
+      m_Calls: []
+  onSolved:
+    m_PersistentCalls:
+      m_Calls: []
+  onSolvedWithIndex:
     m_PersistentCalls:
       m_Calls: []
 --- !u!114 &5660599755342057178
@@ -324,10 +332,12 @@ MonoBehaviour:
   nextSlotKey: 275
   prevSlotKey: 276
   pickPlaceKey: 32
-  swapKey: 304
   tempoTransicao: 0.4
   autoFillOnOpen: 1
   visual: {fileID: 4234912099848628769}
+  sequenceActions: []
+  sfxSource: {fileID: 0}
+  genericSolvedSfx: {fileID: 0}
 --- !u!114 &4234912099848628769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -347,6 +357,25 @@ MonoBehaviour:
   - {fileID: 8949494426950044754}
   - {fileID: 982934476414339272}
   - {fileID: 5105490156730656548}
+--- !u!114 &6105660539024168042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4809095092228411208}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a712f5eb60179e44ca74e147e52fb890, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  quest: {fileID: 11400000, guid: e4c1bfd9a21c40448a1e32774c242d7f, type: 2}
+  objectiveId: LigarCorredor
+  requireQuestToBeActive: 0
+  completeDirectly: 0
+  questToAddAfter: {fileID: 0}
+  onlyAddAfterCompletion: 1
+  debugLogs: 1
 --- !u!4 &5329594737641461234 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 514668b2bf3df0c4881a4de99f0da673, type: 3}

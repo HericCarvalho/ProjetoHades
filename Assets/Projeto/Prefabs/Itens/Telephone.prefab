@@ -78,6 +78,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 1ab6fd145e65b2b4295049d355ac92bd, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5197126214580947634}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 1ab6fd145e65b2b4295049d355ac92bd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5685283514300855446}
   m_SourcePrefab: {fileID: 100100000, guid: 1ab6fd145e65b2b4295049d355ac92bd, type: 3}
 --- !u!1 &3255340056168783917 stripped
 GameObject:
@@ -100,6 +103,8 @@ MonoBehaviour:
   descricao: Celular
   somColeta: {fileID: 8300000, guid: 80d40cd3df5193447a76cb6ccf2bbe93, type: 3}
   itemColetavel: {fileID: 11400000, guid: 14a9b95281109484f84a45e2b740ea14, type: 2}
+  interactionPoint: {fileID: 0}
+  popupOffset: {x: 0, y: 0, z: 0}
   onInteragir:
     m_PersistentCalls:
       m_Calls: []
@@ -124,3 +129,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &5685283514300855446
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3255340056168783917}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10ecec1b44fb5894190804e69d61d589, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemToAdd: {fileID: 0}
+  amountToAdd: 0
+  questToAdvance: {fileID: 0}
+  objectiveId: 
+  questToGiveOnCollect: {fileID: 11400000, guid: c8d27dd45542a884cad667afd1621382, type: 2}
+  removeOnCollect: 1
+  debugLogs: 1

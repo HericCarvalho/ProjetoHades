@@ -73,6 +73,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8cc779cd241e5674ab32d376ce32e9ce, type: 3}
       insertIndex: -1
       addedObject: {fileID: 9118984208150318134}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8cc779cd241e5674ab32d376ce32e9ce, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1420833783636388689}
   m_SourcePrefab: {fileID: 100100000, guid: 8cc779cd241e5674ab32d376ce32e9ce, type: 3}
 --- !u!1 &3300290589602178618 stripped
 GameObject:
@@ -116,6 +119,8 @@ MonoBehaviour:
   descricao: Pagina I
   somColeta: {fileID: 8300000, guid: 6a4c68a101131fb45b23687c4bbf8d76, type: 3}
   itemColetavel: {fileID: 11400000, guid: 6e20c0b404802ed49b2c3649e084beaa, type: 2}
+  interactionPoint: {fileID: 0}
+  popupOffset: {x: 0, y: 0, z: 0}
   onInteragir:
     m_PersistentCalls:
       m_Calls: []
@@ -134,3 +139,22 @@ MonoBehaviour:
   velocidade: 5
   magnitude: 1
   intensidadeBase: 0.5
+--- !u!114 &1420833783636388689
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3300290589602178618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10ecec1b44fb5894190804e69d61d589, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemToAdd: {fileID: 11400000, guid: 6e20c0b404802ed49b2c3649e084beaa, type: 2}
+  amountToAdd: 1
+  questToAdvance: {fileID: 11400000, guid: c7f288dcc55b7c04dad15fda7621ee99, type: 2}
+  objectiveId: collect_page
+  questToGiveOnCollect: {fileID: 0}
+  removeOnCollect: 1
+  debugLogs: 1

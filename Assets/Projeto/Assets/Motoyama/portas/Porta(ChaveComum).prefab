@@ -221,6 +221,7 @@ GameObject:
   - component: {fileID: 1468238090541362979}
   - component: {fileID: 8902611679906738493}
   - component: {fileID: 4014450673803215676}
+  - component: {fileID: 1032897394625130029}
   m_Layer: 6
   m_Name: parede com janela.001
   m_TagString: SemOutline
@@ -375,3 +376,22 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 1
+--- !u!114 &1032897394625130029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8172712376118250517}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a712f5eb60179e44ca74e147e52fb890, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  quest: {fileID: 11400000, guid: c8d27dd45542a884cad667afd1621382, type: 2}
+  objectiveId: abrir_porta
+  requireQuestToBeActive: 0
+  completeDirectly: 0
+  questToAddAfter: {fileID: 11400000, guid: f5160d06b275eef4b84bc002a50034cf, type: 2}
+  onlyAddAfterCompletion: 0
+  debugLogs: 1

@@ -74,6 +74,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba624f9514a34984f9791aac0b40df44, type: 3}
       insertIndex: -1
       addedObject: {fileID: 9037339012403685990}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba624f9514a34984f9791aac0b40df44, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8373456383776256095}
   m_SourcePrefab: {fileID: 100100000, guid: ba624f9514a34984f9791aac0b40df44, type: 3}
 --- !u!1 &3400052669752383053 stripped
 GameObject:
@@ -96,6 +99,8 @@ MonoBehaviour:
   descricao: 
   somColeta: {fileID: 8300000, guid: 5ae7a7aa22dad07479730436e3c07b47, type: 3}
   itemColetavel: {fileID: 11400000, guid: 1c9f67537997cf849aefafeac8fc6a38, type: 2}
+  interactionPoint: {fileID: 0}
+  popupOffset: {x: 0, y: 0, z: 0}
   onInteragir:
     m_PersistentCalls:
       m_Calls: []
@@ -120,3 +125,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.5, y: 0.5, z: 0.5}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8373456383776256095
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3400052669752383053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10ecec1b44fb5894190804e69d61d589, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemToAdd: {fileID: 11400000, guid: 1c9f67537997cf849aefafeac8fc6a38, type: 2}
+  amountToAdd: 1
+  questToAdvance: {fileID: 11400000, guid: f5160d06b275eef4b84bc002a50034cf, type: 2}
+  objectiveId: achar_chave
+  questToGiveOnCollect: {fileID: 0}
+  removeOnCollect: 1
+  debugLogs: 1

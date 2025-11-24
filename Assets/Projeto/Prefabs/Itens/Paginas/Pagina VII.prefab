@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &8707168316607665982
+--- !u!1001 &8560891771170666730
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -8,9 +8,13 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1420833783636388689, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
+      propertyPath: itemToAdd
+      value: 
+      objectReference: {fileID: 11400000, guid: da5e2a42cd0df7240beb70a440027f9e, type: 2}
     - target: {fileID: 2776236497441733760, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -41.877
+      value: -44.59
       objectReference: {fileID: 0}
     - target: {fileID: 2776236497441733760, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: m_LocalPosition.y
@@ -18,7 +22,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2776236497441733760, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.391
+      value: 4.361
       objectReference: {fileID: 0}
     - target: {fileID: 2776236497441733760, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: m_LocalRotation.w
@@ -50,16 +54,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3300290589602178618, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: m_Name
-      value: Pagina II Variant
+      value: Pagina VII
       objectReference: {fileID: 0}
     - target: {fileID: 7195816227298968239, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: descricao
-      value: Pagina II
+      value: Pagina VII
       objectReference: {fileID: 0}
     - target: {fileID: 7195816227298968239, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: itemColetavel
       value: 
-      objectReference: {fileID: 11400000, guid: f129a67e25ed4e149ae8d3fdce1371aa, type: 2}
+      objectReference: {fileID: 11400000, guid: da5e2a42cd0df7240beb70a440027f9e, type: 2}
     - target: {fileID: 7195816227298968239, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: onInteragir.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -71,7 +75,7 @@ PrefabInstance:
     - target: {fileID: 7195816227298968239, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: onInteragir.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 8498763440478634305}
+      objectReference: {fileID: 6557972762810146512}
     - target: {fileID: 7195816227298968239, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
       propertyPath: onInteragir.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 1
@@ -91,32 +95,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3300290589602178618, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8498763440478634305}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
---- !u!1 &6132477440701952260 stripped
+--- !u!1 &6557972762810146512 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3300290589602178618, guid: fe90a66e19d11894d93e215cd7f26f7d, type: 3}
-  m_PrefabInstance: {fileID: 8707168316607665982}
+  m_PrefabInstance: {fileID: 8560891771170666730}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &8498763440478634305
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6132477440701952260}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10ecec1b44fb5894190804e69d61d589, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  itemToAdd: {fileID: 11400000, guid: f129a67e25ed4e149ae8d3fdce1371aa, type: 2}
-  amountToAdd: 1
-  questToAdvance: {fileID: 11400000, guid: c7f288dcc55b7c04dad15fda7621ee99, type: 2}
-  objectiveId: collect_page
-  questToGiveOnCollect: {fileID: 0}
-  removeOnCollect: 1
-  debugLogs: 1

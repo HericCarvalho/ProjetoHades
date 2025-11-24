@@ -58,7 +58,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 6bdf5b11da3eb9144a9f147cc6f32bcc, type: 3}
       propertyPath: m_Name
-      value: livro aberto preto
+      value: DiarioDeSobrevivencia
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 6bdf5b11da3eb9144a9f147cc6f32bcc, type: 3}
       propertyPath: m_Layer
@@ -78,6 +78,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6bdf5b11da3eb9144a9f147cc6f32bcc, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6500152504731969244}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6bdf5b11da3eb9144a9f147cc6f32bcc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8006462104552147049}
   m_SourcePrefab: {fileID: 100100000, guid: 6bdf5b11da3eb9144a9f147cc6f32bcc, type: 3}
 --- !u!1 &5184860758582641872 stripped
 GameObject:
@@ -100,6 +103,8 @@ MonoBehaviour:
   descricao: Diario
   somColeta: {fileID: 8300000, guid: 6598843d210178f4f99ce1d85f4bfe3a, type: 3}
   itemColetavel: {fileID: 11400000, guid: a33b425d322d6b6458aca272ed53af29, type: 2}
+  interactionPoint: {fileID: 0}
+  popupOffset: {x: 0, y: 0, z: 0}
   onInteragir:
     m_PersistentCalls:
       m_Calls: []
@@ -124,3 +129,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2, y: 2, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8006462104552147049
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5184860758582641872}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10ecec1b44fb5894190804e69d61d589, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemToAdd: {fileID: 0}
+  amountToAdd: 0
+  questToAdvance: {fileID: 0}
+  objectiveId: 
+  questToGiveOnCollect: {fileID: 11400000, guid: c7f288dcc55b7c04dad15fda7621ee99, type: 2}
+  removeOnCollect: 1
+  debugLogs: 1
