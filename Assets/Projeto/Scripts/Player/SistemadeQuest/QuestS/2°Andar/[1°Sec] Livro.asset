@@ -19,5 +19,5 @@ MonoBehaviour:
   - id: collect_page
     type: 1
     targetTagOrId: 
-    targetAmount: 20
+    targetAmount: 10
     autoComplete: 0
