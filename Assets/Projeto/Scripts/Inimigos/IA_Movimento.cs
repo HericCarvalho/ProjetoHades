@@ -6,17 +6,20 @@ public class IA_Movimento : MonoBehaviour
     public enum AIState { Parado, Procurando, Perseguindo, Atacando }
     public AIState state = AIState.Parado;
 
+    Animator anim;
     public NavMeshAgent agent;
     public Transform player;
+
     public float detectionRange = 15f;
     public float attackRange = 2f;
-
     public float waitTimeIdle = 3f;
+
     Vector3 lastSeenPlayerPos;
     float idleTimer;
 
     void Start()
     {
+        anim = GetComponentInChildren<Animator>();
         agent = GetComponent<NavMeshAgent>();
         state = AIState.Parado;
         idleTimer = waitTimeIdle;
@@ -25,8 +28,12 @@ public class IA_Movimento : MonoBehaviour
     void Update()
     {
         float distance = Vector3.Distance(transform.position, player.position);
+        // Para quando o NavMeshAgent perde o caminho
+        if (agent.pathStatus == NavMeshPathStatus.PathInvalid || agent.pathStatus == NavMeshPathStatus.PathPartial)
+        {
+            agent.ResetPath(); // limpa o destino
+        }
 
-        // Máquinas de estados (FSM)
         switch (state)
         {
             case AIState.Parado:
@@ -57,6 +64,8 @@ public class IA_Movimento : MonoBehaviour
                 if (distance > attackRange) ChangeState(AIState.Perseguindo);
                 break;
         }
+
+        AtualizarAnimacoes();
     }
 
     // ---------------- ESTADOS ---------------- //
@@ -76,8 +85,8 @@ public class IA_Movimento : MonoBehaviour
     {
         agent.isStopped = false;
 
-        // Se chegou ao último local visto → procura outro ponto aleatório
-        if (!agent.pathPending && agent.remainingDistance <= 0.5f)
+        // Se chegou ao último destino → pega novo ponto randômico
+        if (!agent.pathPending && agent.remainingDistance <=1f)
         {
             Vector3 randomPoint = RandomNavSphere(transform.position, 12f);
             agent.SetDestination(randomPoint);
@@ -94,12 +103,48 @@ public class IA_Movimento : MonoBehaviour
     {
         agent.isStopped = true;
         transform.LookAt(player.position);
+    }
 
-        // Aqui você pode colocar animação e dano ao player
-        Debug.Log("Atacando o Player!");
+    // ---------------- ANIMAÇÕES ---------------- //
 
-        // Exemplo de ataque automático com cooldown → opcional
-        // StartCoroutine(GiveDamage());
+    void AtualizarAnimacoes()
+    {
+        // limpa triggers de ataque (garante que não travem)
+        anim.ResetTrigger("Ataque1");
+        anim.ResetTrigger("Ataque2");
+
+        switch (state)
+        {
+            case AIState.Parado:
+                anim.SetBool("Idle", true);
+                anim.SetBool("Andando", false);
+                anim.SetBool("Correndo", false);
+                break;
+
+            case AIState.Procurando:
+                anim.SetBool("Idle", false);
+                anim.SetBool("Andando", true);
+                anim.SetBool("Correndo", false);
+                break;
+
+            case AIState.Perseguindo:
+                anim.SetBool("Idle", false);
+                anim.SetBool("Andando", false);
+                anim.SetBool("Correndo", true);
+                break;
+
+            case AIState.Atacando:
+                anim.SetBool("Idle", false);
+                anim.SetBool("Andando", false);
+                anim.SetBool("Correndo", false);
+
+                // alterna entre ataque1 e ataque2
+                if (Random.value > 0.5f)
+                    anim.SetTrigger("Ataque1");
+                else
+                    anim.SetTrigger("Ataque2");
+                break;
+        }
     }
 
     // ---------------- UTILS ---------------- //
@@ -111,13 +156,17 @@ public class IA_Movimento : MonoBehaviour
 
     public static Vector3 RandomNavSphere(Vector3 origin, float dist)
     {
-        Vector3 random = Random.insideUnitSphere * dist;
-        random += origin;
-        NavMesh.SamplePosition(random, out NavMeshHit navHit, dist, NavMesh.AllAreas);
-        return navHit.position;
+        for (int i = 0; i < 20; i++)
+        {
+            Vector3 randomPos = origin + Random.insideUnitSphere * dist;
+            NavMeshHit navHit;
+            if (NavMesh.SamplePosition(randomPos, out navHit, dist, NavMesh.AllAreas))
+                return navHit.position;
+        }
+        return origin; // se não achar nenhum ponto válido
     }
 
-    // Gizmos para visualizar os raios
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
