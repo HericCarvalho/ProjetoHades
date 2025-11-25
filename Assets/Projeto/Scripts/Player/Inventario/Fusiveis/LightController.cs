@@ -11,7 +11,7 @@ using UnityEngine;
 /// </summary>
 public class LightController : MonoBehaviour
 {
-    [Header("Lights (Unity Light components)")]
+    /*[Header("Lights (Unity Light components)")]
     public Light[] lights;
 
     [Header("Emissive materials (opcional)")]
@@ -44,6 +44,11 @@ public class LightController : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void Start()
+    {
+        print(gameObject.name);
     }
 
     /// <summary>
@@ -172,5 +177,5 @@ public class LightController : MonoBehaviour
             }
             yield return null;
         }
-    }
+    }*/
 }

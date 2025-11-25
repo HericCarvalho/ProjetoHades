@@ -32,7 +32,7 @@ public class Locker : MonoBehaviour
 
     private void Start()
     {
-        playerController = FindObjectOfType<MovimentaçãoPlayer>();
+        playerController = FindFirstObjectByType<MovimentaçãoPlayer>();
     }
 
     public void ToggleLocker()

@@ -381,14 +381,14 @@ public class FuseboxInteractor : MonoBehaviour
         }
 
         // Light controllers
-        if (action.lightControllers != null)
+        /*if (action.lightControllers != null)
         {
             foreach (var lc in action.lightControllers)
             {
                 if (lc == null) continue;
                 lc.UnlockLights(action.lightsTargetIntensity, action.lightsRampDuration);
             }
-        }
+        }*/
 
         // HUD / SFX
         if (action.showSolvedMessage && HUD_Interacao.instancia != null) HUD_Interacao.instancia.MostrarNotificacao(action.solvedMessage, null);

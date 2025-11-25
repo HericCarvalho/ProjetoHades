@@ -14965,7 +14965,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27338ca2cc144da4390ee044958e57a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cenaInicioIndex: 2
+  cenaInicioIndex: 1
   painelMenuPrincipal: {fileID: 909872993}
   painelOpcoes: {fileID: 1000888964}
   painelCreditos: {fileID: 650640920}
