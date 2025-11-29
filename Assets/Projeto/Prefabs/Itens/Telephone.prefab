@@ -101,7 +101,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tipo: 0
   descricao: Celular
-  somColeta: {fileID: 8300000, guid: 80d40cd3df5193447a76cb6ccf2bbe93, type: 3}
+  somColeta: {fileID: 8300000, guid: c22ef448f5a56a54591713eac4f2f89c, type: 3}
   itemColetavel: {fileID: 11400000, guid: 14a9b95281109484f84a45e2b740ea14, type: 2}
   interactionPoint: {fileID: 0}
   popupOffset: {x: 0, y: 0, z: 0}

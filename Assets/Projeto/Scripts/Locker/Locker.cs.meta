@@ -1,2 +1,16 @@
 fileFormatVersion: 2
 guid: fe19bf6422949e443bed8a709976fe1d
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - portaAnimator: {instanceID: 0}
+  - cameraPointOutside: {instanceID: 0}
+  - cameraPointInside: {instanceID: 0}
+  - lockerOpenSound: {fileID: 8300000, guid: e5990444807979b4ab04664283e38a06, type: 3}
+  - lockerCloseSound: {fileID: 8300000, guid: d43840ba50e951a4fbc1e3a97fa18868, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

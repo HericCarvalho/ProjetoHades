@@ -10,9 +10,14 @@ public class Locker : MonoBehaviour
     public Transform cameraPointOutside;   
     public Transform cameraPointInside;    
 
-    [Header("TransiÁ„o")]
+    [Header("Transi√ß√£o")]
     public float tempoTransicao = 0.6f;
     public AnimationCurve curvaTransicao = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    [Header("√Åudio")]
+    public AudioClip lockerOpenSound;
+    public AudioClip lockerCloseSound;
+    private AudioSource audioSource;
 
     [Header("Config")]
     public bool usarAnimador = true;   
@@ -21,18 +26,23 @@ public class Locker : MonoBehaviour
     private bool estaDentro = false;
     private bool isAnimating = false;
 
-    private MovimentaÁ„oPlayer playerController;
+    private Movimenta√ß√£oPlayer playerController;
     private Transform playerCamera;
     private Coroutine exitListenerCoroutine = null;
 
-    //PosiÁ„oOriginal
+    //Posi√ß√£oOriginal
     private Transform originalCameraParent = null;
     private Vector3 originalCameraLocalPos;
     private Quaternion originalCameraLocalRot;
 
     private void Start()
     {
-        playerController = FindFirstObjectByType<MovimentaÁ„oPlayer>();
+        playerController = FindFirstObjectByType<Movimenta√ß√£oPlayer>();
+        
+        // Configura AudioSource
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
     }
 
     public void ToggleLocker()
@@ -47,11 +57,11 @@ public class Locker : MonoBehaviour
     private IEnumerator EnterRoutine()
     {
         Debug.Log("[Locker] EnterRoutine start");
-        if (!TryCapturePlayer()) { Debug.LogWarning("[Locker] EnterRoutine: player n„o capturado."); yield break; }
+        if (!TryCapturePlayer()) { Debug.LogWarning("[Locker] EnterRoutine: player n√£o capturado."); yield break; }
 
         isAnimating = true;
 
-        // trava e esconde o corpo **antes** da transiÁ„o
+        // trava e esconde o corpo **antes** da transi√ß√£o
         playerController.SetCanMove(false);
         playerController.SetBodyVisible(false);
 
@@ -59,11 +69,15 @@ public class Locker : MonoBehaviour
         if (usarAnimador && portaAnimator != null)
             portaAnimator.SetBool(parametroOpen, true);
 
-        // pega c‚mera do player
-        playerCamera = playerController.cameraReferencia;
-        if (playerCamera == null) { Debug.LogWarning("[Locker] cameraReferencia n„o encontrada."); isAnimating = false; yield break; }
+        // toca som de abrir
+        if (lockerOpenSound != null && audioSource != null)
+            audioSource.PlayOneShot(lockerOpenSound);
 
-        // SALVA estado original da c‚mera para restaurar depois
+        // pega c√¢mera do player
+        playerCamera = playerController.cameraReferencia;
+        if (playerCamera == null) { Debug.LogWarning("[Locker] cameraReferencia n√£o encontrada."); isAnimating = false; yield break; }
+
+        // SALVA estado original da c√¢mera para restaurar depois
         originalCameraParent = playerCamera.parent;
         originalCameraLocalPos = playerCamera.localPosition;
         originalCameraLocalRot = playerCamera.localRotation;
@@ -74,10 +88,10 @@ public class Locker : MonoBehaviour
         Quaternion targetRot = cameraPointInside != null ? cameraPointInside.rotation : startRot;
 
         // enquanto dentro, normalmente queremos que o jogador consiga olhar (pitch/yaw)
-        // mas a rotaÁ„o yaw depende do transform do jogador ó mantemos SetCanRotate(true)
+        // mas a rota√ß√£o yaw depende do transform do jogador √© mantemos SetCanRotate(true)
         playerController.SetCanRotate(true);
 
-        // TRANSI«√O: movemos a c‚mera no espaÁo mundial para o ponto interno
+        // TRANSI√á√ÉO: movemos a c√¢mera no espa√ßo mundial para o ponto interno
         float t = 0f;
         while (t < tempoTransicao)
         {
@@ -88,7 +102,7 @@ public class Locker : MonoBehaviour
             yield return null;
         }
 
-        // garante posiÁ„o final
+        // garante posi√ß√£o final
         playerCamera.position = targetPos;
         playerCamera.rotation = targetRot;
 
@@ -97,7 +111,7 @@ public class Locker : MonoBehaviour
 
         estaDentro = true;
         isAnimating = false;
-        Debug.Log("[Locker] EnterRoutine end ó dentro");
+        Debug.Log("[Locker] EnterRoutine end dentro");
 
         // inicia listener que aguarda a tecla para sair
         if (exitListenerCoroutine != null) StopCoroutine(exitListenerCoroutine);
@@ -109,9 +123,9 @@ public class Locker : MonoBehaviour
     private IEnumerator ExitRoutine()
     {
         if (isAnimating) yield break;
-        if (!TryCapturePlayer()) { Debug.LogWarning("[Locker] ExitRoutine: player n„o capturado."); yield break; }
+        if (!TryCapturePlayer()) { Debug.LogWarning("[Locker] ExitRoutine: player n√£o capturado."); yield break; }
 
-        // cancela listener pra n„o comeÁar duas saÌdas
+        // cancela listener pra n√£o come√ßar duas sa√≠das
         if (exitListenerCoroutine != null)
         {
             StopCoroutine(exitListenerCoroutine);
@@ -125,14 +139,18 @@ public class Locker : MonoBehaviour
         if (usarAnimador && portaAnimator != null)
             portaAnimator.SetBool(parametroOpen, false);
 
-        playerCamera = playerController.cameraReferencia;
-        if (playerCamera == null) { Debug.LogWarning("[Locker] cameraReferencia n„o encontrada."); isAnimating = false; yield break; }
+        // toca som de fechar
+        if (lockerCloseSound != null && audioSource != null)
+            audioSource.PlayOneShot(lockerCloseSound);
 
-        // PREPARA transiÁ„o de volta (world space)
+        playerCamera = playerController.cameraReferencia;
+        if (playerCamera == null) { Debug.LogWarning("[Locker] cameraReferencia n√£o encontrada."); isAnimating = false; yield break; }
+
+        // PREPARA transi√ß√£o de volta (world space)
         Vector3 startPos = playerCamera.position;
         Quaternion startRot = playerCamera.rotation;
 
-        // target ser· o transform original (se salvarmos) ou o ponto outside se houver
+        // target ser√° o transform original (se salvarmos) ou o ponto outside se houver
         Vector3 targetPos;
         Quaternion targetRot;
 
@@ -163,7 +181,7 @@ public class Locker : MonoBehaviour
             yield return null;
         }
 
-        // garante posiÁ„o final
+        // garante posi√ß√£o final
         playerCamera.position = targetPos;
         playerCamera.rotation = targetRot;
 
@@ -176,31 +194,31 @@ public class Locker : MonoBehaviour
         }
         else if (cameraPointOutside != null && cameraPointOutside.parent != null)
         {
-            // se n„o havia parent original, opcionalmente parent para cameraPointOutside.parent
+            // se n√£o havia parent original, opcionalmente parent para cameraPointOutside.parent
             playerCamera.SetParent(cameraPointOutside.parent, true);
         }
 
         // mostrar corpo e restaurar controles
         playerController.SetBodyVisible(true);
 
-        // restaurar rotaÁ„o/movimentaÁ„o
+        // restaurar rota√ß√£o/movimenta√ß√£o
         playerController.SetCanRotate(true);
         playerController.SetCanMove(true);
 
         estaDentro = false;
         isAnimating = false;
-        Debug.Log("[Locker] ExitRoutine end ó fora");
+        Debug.Log("[Locker] ExitRoutine end fora");
     }
 
 
     private IEnumerator ExitListener()
     {
-        // enquanto estiver dentro, aguarda a tecla de interaÁ„o para sair
+        // enquanto estiver dentro, aguarda a tecla de intera√ß√£o para sair
         while (estaDentro)
         {
             if (Input.GetKeyDown(teclaInteragir))
             {
-                // n„o tenta sair se j· estiver animando
+                // n√£o tenta sair se j√° estiver animando
                 if (!isAnimating)
                 {
                     StartCoroutine(ExitRoutine());
@@ -216,11 +234,11 @@ public class Locker : MonoBehaviour
     {
         if (playerController != null) return true;
         var pObj = GameObject.FindGameObjectWithTag("Player");
-        if (pObj != null) playerController = pObj.GetComponent<MovimentaÁ„oPlayer>();
+        if (pObj != null) playerController = pObj.GetComponent<Movimenta√ß√£oPlayer>();
         if (playerController != null) return true;
-        playerController = FindObjectOfType<MovimentaÁ„oPlayer>();
+        playerController = FindObjectOfType<Movimenta√ß√£oPlayer>();
         if (playerController != null) return true;
-        Debug.LogWarning("[Locker] MovimentaÁ„oPlayer n„o encontrado.");
+        Debug.LogWarning("[Locker] Movimenta√ß√£oPlayer n√£o encontrado.");
         return false;
     }
 

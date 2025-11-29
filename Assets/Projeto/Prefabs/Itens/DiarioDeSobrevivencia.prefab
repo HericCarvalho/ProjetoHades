@@ -101,7 +101,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tipo: 0
   descricao: Diario
-  somColeta: {fileID: 8300000, guid: 6598843d210178f4f99ce1d85f4bfe3a, type: 3}
+  somColeta: {fileID: 8300000, guid: 7906faa61d5d39946855409c06c01950, type: 3}
   itemColetavel: {fileID: 11400000, guid: a33b425d322d6b6458aca272ed53af29, type: 2}
   interactionPoint: {fileID: 0}
   popupOffset: {x: 0, y: 0, z: 0}

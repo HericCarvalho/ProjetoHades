@@ -234,6 +234,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  lockerOpenSound: {fileID: 8300000, guid: d43840ba50e951a4fbc1e3a97fa18868, type: 3}
+  lockerCloseSound: {fileID: 8300000, guid: e5990444807979b4ab04664283e38a06, type: 3}
   usarAnimador: 1
   teclaInteragir: 101
 --- !u!114 &9005806460202640195
@@ -252,6 +254,8 @@ MonoBehaviour:
   descricao: 
   somColeta: {fileID: 0}
   itemColetavel: {fileID: 0}
+  interactionPoint: {fileID: 0}
+  popupOffset: {x: 0, y: 0, z: 0}
   onInteragir:
     m_PersistentCalls:
       m_Calls:
